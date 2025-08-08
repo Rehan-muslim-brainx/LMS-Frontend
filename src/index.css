@@ -1,0 +1,380 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.course-card {
+  transition: transform 0.2s;
+  height: 100%;
+}
+
+.course-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.lesson-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidebar {
+  background: white;
+  border-right: 1px solid #dee2e6;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.main-content {
+  padding: 2rem;
+}
+
+.auth-container {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.course-image {
+  height: 200px;
+  object-fit: cover;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.error-message {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.success-message {
+  color: #155724;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+} 
+
+/* Custom styles for better UX */
+
+/* Navbar improvements */
+.custom-navbar {
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.custom-navbar .navbar-brand {
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.custom-navbar .navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+.nav-link-custom {
+  text-decoration: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.nav-link-custom:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Dropdown improvements */
+.dropdown-menu {
+  border: none !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+  border-radius: 12px !important;
+  padding: 0.5rem !important;
+}
+
+.dropdown-item {
+  border-radius: 8px !important;
+  margin: 0.25rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(40, 167, 69, 0.1) !important;
+  transform: translateX(5px);
+}
+
+.dropdown-item:active {
+  background-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+/* Remove default navbar spacing */
+.navbar {
+  margin-bottom: 0 !important;
+}
+
+/* Ensure dropdown text is visible */
+.dropdown-toggle::after {
+  display: none !important;
+}
+
+/* Better contrast for dropdown items */
+.dropdown-item {
+  color: #2c3e50 !important;
+  font-weight: 500 !important;
+}
+
+.dropdown-item:hover {
+  color: #3498db !important;
+}
+
+/* Profile item styling */
+.dropdown-item[href*="profile"] {
+  color: #2c3e50 !important;
+}
+
+.dropdown-item[href*="profile"]:hover {
+  color: #3498db !important;
+  background-color: rgba(52, 152, 219, 0.1) !important;
+}
+
+/* Logout item styling */
+.dropdown-item:not([href]) {
+  color: #e74c3c !important;
+}
+
+.dropdown-item:not([href]):hover {
+  color: #c0392b !important;
+  background-color: rgba(231, 76, 60, 0.1) !important;
+}
+
+/* Tab highlighting improvements */
+.nav-tabs .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: none !important;
+  border-radius: 8px 8px 0 0 !important;
+  margin-right: 4px;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: #333 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  font-weight: 600;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Button improvements */
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Card improvements */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Badge improvements */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Form improvements */
+.form-control:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.form-select:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Alert improvements */
+.alert {
+  border-radius: 12px;
+  border: none;
+}
+
+/* Table improvements */
+.table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: rgba(40, 167, 69, 0.1);
+  border: none;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Modal improvements */
+.modal-content {
+  border-radius: 15px;
+  border: none;
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Loading spinner improvements */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Focus improvements for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: none;
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Better text contrast */
+.text-white-50 {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Improved button groups */
+.btn-group .btn {
+  border-radius: 25px !important;
+}
+
+/* Better spacing */
+.mb-4 {
+  margin-bottom: 1.5rem !important;
+}
+
+.py-5 {
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+/* Remove page margins to eliminate white space */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Add proper spacing between navbar and content */
+.container:not(.navbar .container) {
+  padding-top: 2rem !important;
+}
+
+/* Ensure proper spacing for all pages */
+.py-5 {
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+/* Ensure navbar stays at top */
+.navbar {
+  margin-bottom: 0 !important;
+}
+
+/* Mobile responsiveness for navbar */
+@media (max-width: 991.98px) {
+  .custom-navbar .navbar-collapse {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    margin-top: 1rem;
+    padding: 1rem;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+  
+  .nav-link-custom {
+    color: #333 !important;
+    border-radius: 8px !important;
+    margin: 0.25rem 0 !important;
+  }
+  
+  .nav-link-custom:hover {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    color: #28a745 !important;
+  }
+} 
