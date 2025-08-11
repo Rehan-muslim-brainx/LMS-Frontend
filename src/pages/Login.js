@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +25,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('buildApiUrl(getEndpoint('AUTH.LOGIN')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +54,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-login', {
+      const response = await fetch('buildApiUrl(getEndpoint('AUTH.VERIFY_LOGIN')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +85,7 @@ const Login = () => {
   const handleResendOTP = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+      const response = await fetch('buildApiUrl(getEndpoint('AUTH.RESEND_OTP')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

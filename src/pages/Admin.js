@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Tab, Tabs, Badge } from 'react-bootstrap';
 import { FaLink } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
@@ -125,31 +127,31 @@ const Admin = () => {
       const token = localStorage.getItem('token');
       
       // Fetch courses
-      const coursesResponse = await axios.get('http://localhost:5000/api/courses', {
+      const coursesResponse = await axios.get('buildApiUrl(getEndpoint('COURSES')', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCourses(coursesResponse.data);
 
       // Fetch users
-      const usersResponse = await axios.get('http://localhost:5000/api/users', {
+      const usersResponse = await axios.get('buildApiUrl(getEndpoint('USERS')', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(usersResponse.data);
 
       // Fetch pending approvals
-      const pendingResponse = await axios.get('http://localhost:5000/api/enrollments/pending-approval', {
+      const pendingResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_PENDING-APPROVAL')', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPendingApprovals(pendingResponse.data);
 
       // Fetch completed enrollments
-      const completedResponse = await axios.get('http://localhost:5000/api/enrollments/completed', {
+      const completedResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_COMPLETED')', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCompletedEnrollments(completedResponse.data);
 
       // Fetch departments
-      const departmentsResponse = await axios.get('http://localhost:5000/api/departments');
+      const departmentsResponse = await axios.get('buildApiUrl(getEndpoint('DEPARTMENTS')');
       setDepartments(departmentsResponse.data);
 
       setLoading(false);
@@ -206,7 +208,7 @@ const Admin = () => {
     formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/upload', formData, {
+      const response = await axios.post('buildApiUrl(getEndpoint('UPLOAD')', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -227,7 +229,7 @@ const Admin = () => {
     formData.append('file', selectedImageFile);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/upload', formData, {
+      const response = await axios.post('buildApiUrl(getEndpoint('UPLOAD')', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -275,12 +277,12 @@ const Admin = () => {
       };
 
       if (selectedCourse) {
-        await axios.put(`http://localhost:5000/api/courses/${selectedCourse.id}`, courseData, {
+        await axios.put(`buildApiUrl(getEndpoint('COURSES_')${selectedCourse.id}`, courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course updated successfully!', 'success');
       } else {
-        await axios.post('http://localhost:5000/api/courses', courseData, {
+        await axios.post('buildApiUrl(getEndpoint('COURSES')', courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course created successfully!', 'success');
@@ -327,7 +329,7 @@ const Admin = () => {
   const handleDeleteCourse = async (courseId) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/courses/${courseId}`, {
+        await axios.delete(`buildApiUrl(getEndpoint('COURSES_')${courseId}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course deleted successfully!', 'success');
@@ -360,7 +362,7 @@ const Admin = () => {
   const handleApproveCompletion = async () => {
     if (window.confirm(`Are you sure you want to approve the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
       try {
-        await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/approve`, 
+        await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${selectedApproval.id}/approve`, 
           { notes: approvalNotes },
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
         );
@@ -379,7 +381,7 @@ const Admin = () => {
   const handleRejectCompletion = async () => {
     if (window.confirm(`Are you sure you want to reject the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
       try {
-        await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/reject`, 
+        await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${selectedApproval.id}/reject`, 
           { notes: approvalNotes },
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
         );
@@ -409,7 +411,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        await axios.delete(`buildApiUrl(getEndpoint('USERS_')${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -426,7 +428,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to block user "${userName}"? Blocked users cannot access the system.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:5000/api/users/${userId}/block`, {}, {
+        await axios.put(`buildApiUrl(getEndpoint('USERS_')${userId}/block`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -443,7 +445,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to unblock user "${userName}"? They will be able to access the system again.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:5000/api/users/${userId}/unblock`, {}, {
+        await axios.put(`buildApiUrl(getEndpoint('USERS_')${userId}/unblock`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -473,7 +475,7 @@ const Admin = () => {
         roles: filteredRoles
       };
 
-      await axios.post('http://localhost:5000/api/departments', departmentData, {
+      await axios.post('buildApiUrl(getEndpoint('DEPARTMENTS')', departmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -504,7 +506,7 @@ const Admin = () => {
         roles: filteredRoles
       };
 
-      await axios.put(`http://localhost:5000/api/departments/${selectedDepartmentForEdit.id}`, departmentData, {
+      await axios.put(`buildApiUrl(getEndpoint('DEPARTMENTS_')${selectedDepartmentForEdit.id}`, departmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -523,7 +525,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete the "${departmentName}" department? This action cannot be undone and will affect existing users in this department.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/departments/${departmentId}`, {
+        await axios.delete(`buildApiUrl(getEndpoint('DEPARTMENTS_')${departmentId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

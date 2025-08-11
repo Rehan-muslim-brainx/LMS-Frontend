@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { Container, Row, Col, Card, Button, ProgressBar, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaPlay, FaBook, FaUsers, FaClock, FaGraduationCap, FaCheck, FaHourglassHalf } from 'react-icons/fa';
@@ -21,7 +23,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         // Fetch user enrollments
-        const enrollmentsResponse = await axios.get('http://localhost:5000/api/enrollments/my-enrollments', {
+        const enrollmentsResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_MY-ENROLLMENTS')', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setEnrollments(enrollmentsResponse.data);
@@ -29,7 +31,7 @@ const Dashboard = () => {
         // Fetch all courses for project managers and admins
         const allowedRoles = ['associate_project_manager', 'assistant_project_manager', 'principal_software_engineer', 'admin'];
         if (allowedRoles.includes(user.role)) {
-          const coursesResponse = await axios.get('http://localhost:5000/api/courses');
+          const coursesResponse = await axios.get('buildApiUrl(getEndpoint('COURSES')');
           setCourses(coursesResponse.data);
         }
 

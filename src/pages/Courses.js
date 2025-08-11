@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { Container, Row, Col, Card, Button, Badge, Form, InputGroup, Alert, Modal } from 'react-bootstrap';
 import { FaLink } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +25,7 @@ const Courses = () => {
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/courses');
+      const response = await axios.get('buildApiUrl(getEndpoint('COURSES')');
       setCourses(response.data);
       
       // Fetch enrollment statuses for each course if user is logged in
@@ -31,7 +33,7 @@ const Courses = () => {
         const statuses = {};
         for (const course of response.data) {
           try {
-            const statusResponse = await axios.get(`http://localhost:5000/api/enrollments/check/${course.id}`, {
+            const statusResponse = await axios.get(`buildApiUrl(getEndpoint('ENROLLMENTS_CHECK_')${course.id}`, {
               headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             statuses[course.id] = statusResponse.data;
@@ -83,7 +85,7 @@ const Courses = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/enrollments', 
+      await axios.post('buildApiUrl(getEndpoint('ENROLLMENTS')', 
         { course_id: courseId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -109,7 +111,7 @@ const Courses = () => {
       const token = localStorage.getItem('token');
       
       // First, get the user's enrollments to find the enrollment ID for this course
-      const enrollmentsResponse = await axios.get('http://localhost:5000/api/enrollments/my-enrollments', {
+      const enrollmentsResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_MY-ENROLLMENTS')', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -121,7 +123,7 @@ const Courses = () => {
         return;
       }
 
-      await axios.post(`http://localhost:5000/api/enrollments/${enrollment.id}/request-completion`, 
+      await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${enrollment.id}/request-completion`, 
         { notes: 'Course completion requested by user' },
         { headers: { Authorization: `Bearer ${token}` } }
       );

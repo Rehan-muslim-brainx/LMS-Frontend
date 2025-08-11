@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,7 +34,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin-login', {
+      const response = await fetch('buildApiUrl(getEndpoint('AUTH.ADMIN_LOGIN')', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { buildApiUrl, getEndpoint } from '../config';
+
 import { Container, Row, Col, Card, Button, Badge, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaPlay, FaUsers, FaClock, FaStar, FaLink } from 'react-icons/fa';
@@ -16,7 +18,7 @@ const Home = () => {
   useEffect(() => {
     const fetchFeaturedCourses = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/courses');
+        const response = await axios.get('buildApiUrl(getEndpoint('COURSES')');
         // Get first 3 courses as featured
         setFeaturedCourses(response.data.slice(0, 3));
       } catch (error) {

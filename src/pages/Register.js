@@ -3,6 +3,7 @@ import { Container, Card, Form, Button, Alert, Row, Col } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { buildApiUrl, getEndpoint } from '../config';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -32,7 +33,7 @@ const Register = () => {
   const testConnectivity = async () => {
     try {
       console.log('Testing backend connectivity...');
-      const response = await fetch('http://localhost:5000/api/test');
+      const response = await fetch(buildApiUrl(getEndpoint('TEST')));
       const data = await response.json();
       console.log('Backend connectivity test successful:', data);
     } catch (error) {
@@ -58,7 +59,7 @@ const Register = () => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/departments');
+      const response = await axios.get(buildApiUrl(getEndpoint('DEPARTMENTS')));
       setDepartments(response.data);
     } catch (error) {
       console.error('Error fetching departments:', error);
@@ -83,7 +84,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.REGISTER')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +132,7 @@ const Register = () => {
       console.log('OTP:', otp);
       console.log('User data:', tempUserData);
       
-      const response = await fetch('http://localhost:5000/api/auth/verify-registration', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.VERIFY_REGISTRATION')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ const Register = () => {
 
       console.log('Resending OTP for:', tempUserData.email);
       
-      const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.RESEND_OTP')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
