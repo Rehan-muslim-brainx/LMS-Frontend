@@ -6,29 +6,53 @@ import axios from 'axios';
 
 const Admin = () => {
   const { user } = useAuth();
+  // State variables
+  const [loading, setLoading] = useState(true);
   const [courses, setCourses] = useState([]);
   const [users, setUsers] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [completedEnrollments, setCompletedEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState([]); // Added
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false); // Added
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedApproval, setSelectedApproval] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState(''); // For filtering
+  const [selectedDepartmentForEdit, setSelectedDepartmentForEdit] = useState(null); // Added for editing
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  
+  // Filtered data states
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredApprovals, setFilteredApprovals] = useState([]);
+  const [filteredCompletions, setFilteredCompletions] = useState([]);
+  
+  // Filter states
+  const [approvalDepartmentFilter, setApprovalDepartmentFilter] = useState('');
+  const [completionDepartmentFilter, setCompletionDepartmentFilter] = useState('');
+
+  // Course form state
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
     category: 'Project Management',
-    price: 0, // Always free
+    department: '',
+    price: 0,
     duration: 0,
     image_url: '',
     document_url: '',
     external_link: ''
   });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedImageFile, setSelectedImageFile] = useState(null);
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [approvalNotes, setApprovalNotes] = useState('');
+
+  // Department form state
+  const [departmentForm, setDepartmentForm] = useState({
+    name: '',
+    description: '',
+    roles: ['']
+  });
 
   // Default course image
   const defaultCourseImage = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
@@ -36,6 +60,38 @@ const Admin = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Initialize filtered arrays when data is loaded
+  useEffect(() => {
+    if (users.length > 0) {
+      setFilteredUsers(users);
+    }
+    if (pendingApprovals.length > 0) {
+      setFilteredApprovals(pendingApprovals);
+    }
+    if (completedEnrollments.length > 0) {
+      setFilteredCompletions(completedEnrollments);
+    }
+  }, [users, pendingApprovals, completedEnrollments]);
+
+  // Department filtering effects
+  useEffect(() => {
+    if (users.length > 0) {
+      filterUsersByDepartment(selectedDepartment);
+    }
+  }, [users, selectedDepartment]);
+
+  useEffect(() => {
+    if (pendingApprovals.length > 0) {
+      filterApprovalsByDepartment(approvalDepartmentFilter);
+    }
+  }, [pendingApprovals, approvalDepartmentFilter]);
+
+  useEffect(() => {
+    if (completedEnrollments.length > 0) {
+      filterCompletionsByDepartment(completionDepartmentFilter);
+    }
+  }, [completedEnrollments, completionDepartmentFilter]);
 
   // Check if user is admin
   if (!user || user.role !== 'admin') {
@@ -92,12 +148,43 @@ const Admin = () => {
       });
       setCompletedEnrollments(completedResponse.data);
 
+      // Fetch departments
+      const departmentsResponse = await axios.get('http://localhost:5000/api/departments');
+      setDepartments(departmentsResponse.data);
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);
       setLoading(false);
     }
   };
+
+  // Department filtering functions
+  const filterUsersByDepartment = (department) => {
+    if (!department) {
+      setFilteredUsers(users);
+    } else {
+      setFilteredUsers(users.filter(user => user.department === department));
+    }
+  };
+
+  const filterApprovalsByDepartment = (department) => {
+    if (!department) {
+      setFilteredApprovals(pendingApprovals);
+    } else {
+      setFilteredApprovals(pendingApprovals.filter(approval => approval.user_department === department));
+    }
+  };
+
+  const filterCompletionsByDepartment = (department) => {
+    if (!department) {
+      setFilteredCompletions(completedEnrollments);
+    } else {
+      setFilteredCompletions(completedEnrollments.filter(completion => completion.user_department === department));
+    }
+  };
+
+
 
   const showAlert = (message, type) => {
     setAlert({ show: true, message, type });
@@ -205,6 +292,7 @@ const Admin = () => {
         title: '',
         description: '',
         category: 'Project Management',
+        department: '',
         price: 0,
         duration: 0,
         image_url: '',
@@ -226,6 +314,7 @@ const Admin = () => {
       title: course.title,
       description: course.description,
       category: course.category,
+      department: course.department || '',
       price: course.price || 0,
       duration: course.duration || 0,
       image_url: course.image_url || '',
@@ -257,6 +346,7 @@ const Admin = () => {
       title: '',
       description: '',
       category: 'Project Management',
+      department: '',
       price: 0,
       duration: 0,
       image_url: '',
@@ -268,36 +358,40 @@ const Admin = () => {
   };
 
   const handleApproveCompletion = async () => {
-    try {
-      await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/approve`, 
-        { notes: approvalNotes },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
-      showAlert('Completion approved successfully!', 'success');
-      setShowApprovalModal(false);
-      setSelectedApproval(null);
-      setApprovalNotes('');
-      fetchData();
-    } catch (error) {
-      console.error('Error approving completion:', error);
-      showAlert('Error approving completion', 'danger');
+    if (window.confirm(`Are you sure you want to approve the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
+      try {
+        await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/approve`, 
+          { notes: approvalNotes },
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        showAlert('Completion approved successfully!', 'success');
+        setShowApprovalModal(false);
+        setSelectedApproval(null);
+        setApprovalNotes('');
+        fetchData();
+      } catch (error) {
+        console.error('Error approving completion:', error);
+        showAlert('Error approving completion', 'danger');
+      }
     }
   };
 
   const handleRejectCompletion = async () => {
-    try {
-      await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/reject`, 
-        { notes: approvalNotes },
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-      );
-      showAlert('Completion rejected', 'info');
-      setShowApprovalModal(false);
-      setSelectedApproval(null);
-      setApprovalNotes('');
-      fetchData();
-    } catch (error) {
-      console.error('Error rejecting completion:', error);
-      showAlert('Error rejecting completion', 'danger');
+    if (window.confirm(`Are you sure you want to reject the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
+      try {
+        await axios.post(`http://localhost:5000/api/enrollments/${selectedApproval.id}/reject`, 
+          { notes: approvalNotes },
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        showAlert('Completion rejected', 'info');
+        setShowApprovalModal(false);
+        setSelectedApproval(null);
+        setApprovalNotes('');
+        fetchData();
+      } catch (error) {
+        console.error('Error rejecting completion:', error);
+        showAlert('Error rejecting completion', 'danger');
+      }
     }
   };
 
@@ -310,6 +404,176 @@ const Admin = () => {
     return completedEnrollments.filter(e => e.user_id === userId).length;
   };
 
+  // User management functions
+  const handleDeleteUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        showAlert(`User "${userName}" deleted successfully`, 'success');
+        fetchData(); // Refresh the data
+      } catch (error) {
+        console.error('Delete user error:', error);
+        showAlert(error.response?.data?.message || 'Error deleting user', 'danger');
+      }
+    }
+  };
+
+  const handleBlockUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to block user "${userName}"? Blocked users cannot access the system.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(`http://localhost:5000/api/users/${userId}/block`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        showAlert(`User "${userName}" blocked successfully`, 'success');
+        fetchData(); // Refresh the data
+      } catch (error) {
+        console.error('Block user error:', error);
+        showAlert(error.response?.data?.message || 'Error blocking user', 'danger');
+      }
+    }
+  };
+
+  const handleUnblockUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to unblock user "${userName}"? They will be able to access the system again.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.put(`http://localhost:5000/api/users/${userId}/unblock`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        showAlert(`User "${userName}" unblocked successfully`, 'success');
+        fetchData(); // Refresh the data
+      } catch (error) {
+        console.error('Unblock user error:', error);
+        showAlert(error.response?.data?.message || 'Error unblocking user', 'danger');
+      }
+    }
+  };
+
+  // Department management functions
+  const handleCreateDepartment = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const filteredRoles = departmentForm.roles.filter(role => role.trim() !== '');
+      
+      if (filteredRoles.length === 0) {
+        showAlert('Please add at least one role', 'warning');
+        return;
+      }
+
+      const departmentData = {
+        name: departmentForm.name.trim(),
+        description: departmentForm.description.trim(),
+        roles: filteredRoles
+      };
+
+      await axios.post('http://localhost:5000/api/departments', departmentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      showAlert('Department created successfully!', 'success');
+      setShowDepartmentModal(false);
+      setDepartmentForm({ name: '', description: '', roles: [''] });
+      setSelectedDepartmentForEdit(null);
+      fetchData();
+    } catch (error) {
+      console.error('Create department error:', error);
+      showAlert(error.response?.data?.message || 'Error creating department', 'danger');
+    }
+  };
+
+  const handleUpdateDepartment = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const filteredRoles = departmentForm.roles.filter(role => role.trim() !== '');
+      
+      if (filteredRoles.length === 0) {
+        showAlert('Please add at least one role', 'warning');
+        return;
+      }
+
+      const departmentData = {
+        name: departmentForm.name.trim(),
+        description: departmentForm.description.trim(),
+        roles: filteredRoles
+      };
+
+      await axios.put(`http://localhost:5000/api/departments/${selectedDepartmentForEdit.id}`, departmentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      showAlert('Department updated successfully!', 'success');
+      setShowDepartmentModal(false);
+      setDepartmentForm({ name: '', description: '', roles: [''] });
+      setSelectedDepartmentForEdit(null);
+      fetchData();
+    } catch (error) {
+      console.error('Update department error:', error);
+      showAlert(error.response?.data?.message || 'Error updating department', 'danger');
+    }
+  };
+
+  const handleDeleteDepartment = async (departmentId, departmentName) => {
+    if (window.confirm(`Are you sure you want to delete the "${departmentName}" department? This action cannot be undone and will affect existing users in this department.`)) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/departments/${departmentId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        showAlert(`Department "${departmentName}" deleted successfully`, 'success');
+        fetchData();
+      } catch (error) {
+        console.error('Delete department error:', error);
+        showAlert(error.response?.data?.message || 'Error deleting department', 'danger');
+      }
+    }
+  };
+
+  const handleEditDepartment = (department) => {
+    setSelectedDepartmentForEdit(department);
+    setDepartmentForm({
+      name: department.name,
+      description: department.description || '',
+      roles: [...department.roles, ''] // Add empty role for easy addition
+    });
+    setShowDepartmentModal(true);
+  };
+
+  const addRoleField = () => {
+    setDepartmentForm(prev => ({
+      ...prev,
+      roles: [...prev.roles, '']
+    }));
+  };
+
+  const removeRoleField = (index) => {
+    if (departmentForm.roles.length > 1) {
+      setDepartmentForm(prev => ({
+        ...prev,
+        roles: prev.roles.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateRole = (index, value) => {
+    setDepartmentForm(prev => ({
+      ...prev,
+      roles: prev.roles.map((role, i) => i === index ? value : role)
+    }));
+  };
+
+  const closeDepartmentModal = () => {
+    setShowDepartmentModal(false);
+    setSelectedDepartmentForEdit(null);
+    setDepartmentForm({ name: '', description: '', roles: [''] });
+  };
 
 
   if (loading) {
@@ -407,6 +671,7 @@ const Admin = () => {
                         <Card.Body className="d-flex flex-column p-3">
                           <div className="mb-2">
                             <Badge bg="success" className="me-2" style={{ borderRadius: '20px' }}>{course.category}</Badge>
+                            <Badge bg="primary" className="me-2" style={{ borderRadius: '20px' }}>{course.department}</Badge>
                             <Badge bg="info" style={{ borderRadius: '20px' }}>Free</Badge>
                           </div>
                           <Card.Title className="h6 mb-2 fw-bold">{course.title}</Card.Title>
@@ -443,8 +708,20 @@ const Admin = () => {
           }}>
             <Card.Body>
               <Row className="mb-3">
-                <Col>
-                  <h5>All Users ({users.length})</h5>
+                <Col md={6}>
+                  <h5>All Users ({filteredUsers.length})</h5>
+                </Col>
+                <Col md={6}>
+                  <Form.Select
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  >
+                    <option value="">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept.name} value={dept.name}>{dept.name}</option>
+                    ))}
+                  </Form.Select>
                 </Col>
               </Row>
 
@@ -453,19 +730,32 @@ const Admin = () => {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Department</th>
                     <th>Role</th>
+                    <th>Status</th>
                     <th>Completions</th>
                     <th>Joined</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => (
+                  {filteredUsers.map(user => (
                     <tr key={user.id}>
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>
+                        <Badge bg="primary" style={{ borderRadius: '20px' }}>
+                          {user.department || 'Admin'}
+                        </Badge>
+                      </td>
+                      <td>
                         <Badge bg={user.role === 'admin' ? 'warning' : 'success'}>
                           {user.role}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge bg={user.status === 'blocked' ? 'danger' : 'success'} style={{ borderRadius: '20px' }}>
+                          {user.status === 'blocked' ? '🚫 Blocked' : '✅ Active'}
                         </Badge>
                       </td>
                       <td>
@@ -479,6 +769,42 @@ const Admin = () => {
                         )}
                       </td>
                       <td>{new Date(user.created_at).toLocaleDateString()}</td>
+                      <td>
+                        {user.role !== 'admin' && (
+                          <div className="d-flex gap-1">
+                            {user.status === 'blocked' ? (
+                              <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => handleUnblockUser(user.id, user.name)}
+                                title="Unblock User"
+                              >
+                                🔓
+                              </Button>
+                            ) : (
+                                                                    <Button
+                                        size="sm"
+                                        variant="warning"
+                                        onClick={() => handleBlockUser(user.id, user.name)}
+                                        title="Block User"
+                                      >
+                                        🚫
+                                      </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteUser(user.id, user.name)}
+                              title="Delete User"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
+                        )}
+                        {user.role === 'admin' && (
+                          <span className="text-muted">Admin</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -495,16 +821,33 @@ const Admin = () => {
           }}>
             <Card.Body>
               <Row className="mb-3">
-                <Col>
-                  <h5>Pending Completion Requests ({pendingApprovals.length})</h5>
+                <Col md={6}>
+                  <h5>Pending Completion Requests ({filteredApprovals.length})</h5>
+                </Col>
+                <Col md={6}>
+                  <Form.Select
+                    value={approvalDepartmentFilter}
+                    onChange={(e) => setApprovalDepartmentFilter(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  >
+                    <option value="">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept.name} value={dept.name}>{dept.name}</option>
+                    ))}
+                  </Form.Select>
                 </Col>
               </Row>
 
-              {pendingApprovals.length === 0 ? (
+              {filteredApprovals.length === 0 ? (
                 <Card className="text-center py-5" style={{ backgroundColor: 'rgba(255,255,255,0.8)' }}>
                   <Card.Body>
                     <h4>No pending approvals</h4>
-                    <p className="text-muted">All completion requests have been processed</p>
+                    <p className="text-muted">
+                      {approvalDepartmentFilter 
+                        ? `No pending approvals for ${approvalDepartmentFilter} department`
+                        : 'All completion requests have been processed'
+                      }
+                    </p>
                   </Card.Body>
                 </Card>
               ) : (
@@ -512,6 +855,7 @@ const Admin = () => {
                   <thead>
                     <tr>
                       <th>User</th>
+                      <th>Department</th>
                       <th>Course</th>
                       <th>Requested</th>
                       <th>Notes</th>
@@ -519,9 +863,14 @@ const Admin = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingApprovals.map(approval => (
+                    {filteredApprovals.map(approval => (
                       <tr key={approval.id}>
                         <td>{approval.user?.name}</td>
+                        <td>
+                          <Badge bg="primary" style={{ borderRadius: '20px' }}>
+                            {approval.user?.department || 'N/A'}
+                          </Badge>
+                        </td>
                         <td>{approval.course?.title}</td>
                         <td>{new Date(approval.completion_requested_at).toLocaleDateString()}</td>
                         <td>{approval.completion_notes || 'No notes'}</td>
@@ -552,16 +901,33 @@ const Admin = () => {
           }}>
             <Card.Body>
               <Row className="mb-3">
-                <Col>
-                  <h5>Completed Courses ({completedEnrollments.length})</h5>
+                <Col md={6}>
+                  <h5>Completed Courses ({filteredCompletions.length})</h5>
+                </Col>
+                <Col md={6}>
+                  <Form.Select
+                    value={completionDepartmentFilter}
+                    onChange={(e) => setCompletionDepartmentFilter(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  >
+                    <option value="">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept.name} value={dept.name}>{dept.name}</option>
+                    ))}
+                  </Form.Select>
                 </Col>
               </Row>
 
-              {completedEnrollments.length === 0 ? (
+              {filteredCompletions.length === 0 ? (
                 <Card className="text-center py-5" style={{ backgroundColor: 'rgba(255,255,255,0.8)' }}>
                   <Card.Body>
                     <h4>No completed courses yet</h4>
-                    <p className="text-muted">Users will appear here once they complete courses</p>
+                    <p className="text-muted">
+                      {completionDepartmentFilter 
+                        ? `No completed courses in ${completionDepartmentFilter} department`
+                        : 'Users will appear here once they complete courses'
+                      }
+                    </p>
                   </Card.Body>
                 </Card>
               ) : (
@@ -569,6 +935,7 @@ const Admin = () => {
                   <thead>
                     <tr>
                       <th>User</th>
+                      <th>Department</th>
                       <th>Course</th>
                       <th>Completed</th>
                       <th>Approved By</th>
@@ -576,18 +943,108 @@ const Admin = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {completedEnrollments.map(enrollment => (
+                    {filteredCompletions.map(enrollment => (
                       <tr key={enrollment.id}>
+                        <td>{enrollment.user?.name}</td>
                         <td>
-                          {enrollment.user?.name}
-                          <Badge bg="success" className="ms-2">
-                            🎓 {getCompletionCount(enrollment.user_id)}
+                          <Badge bg="primary" style={{ borderRadius: '20px' }}>
+                            {enrollment.user?.department || 'N/A'}
                           </Badge>
                         </td>
                         <td>{enrollment.course?.title}</td>
                         <td>{new Date(enrollment.completed_at).toLocaleDateString()}</td>
                         <td>{enrollment.admin_approver?.name || 'System'}</td>
                         <td>{enrollment.completion_notes || 'No notes'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+
+        <Tab eventKey="departments" title="Department Management">
+          <Card className="shadow-lg border-0" style={{ 
+            backgroundColor: 'rgba(255,255,255,0.95)', 
+            backdropFilter: 'blur(10px)',
+            borderRadius: '15px'
+          }}>
+            <Card.Body>
+              <Row className="mb-3">
+                <Col>
+                  <h5>Departments & Roles ({departments.length})</h5>
+                </Col>
+                <Col xs="auto">
+                  <Button 
+                    variant="primary" 
+                    onClick={() => setShowDepartmentModal(true)}
+                    className="shadow"
+                  >
+                    ➕ Add Department
+                  </Button>
+                </Col>
+              </Row>
+
+              {departments.length === 0 ? (
+                <div className="text-center py-5">
+                  <h4>No departments yet</h4>
+                  <p className="text-muted">Create your first department to get started</p>
+                </div>
+              ) : (
+                <Table striped bordered hover>
+                  <thead>
+                    <tr>
+                      <th>Department Name</th>
+                      <th>Description</th>
+                      <th>Available Roles</th>
+                      <th>Users Count</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {departments.map(department => (
+                      <tr key={department.id}>
+                        <td>
+                          <strong>{department.name}</strong>
+                        </td>
+                        <td>{department.description || 'No description'}</td>
+                        <td>
+                          <div className="d-flex flex-wrap gap-1">
+                            {department.roles.map((role, index) => (
+                              <Badge key={index} bg="info" style={{ borderRadius: '15px' }}>
+                                {role}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          <Badge bg="secondary">
+                            {users.filter(user => user.department === department.name).length} users
+                          </Badge>
+                        </td>
+                        <td>{new Date(department.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <div className="d-flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline-primary"
+                              onClick={() => handleEditDepartment(department)}
+                              title="Edit Department"
+                            >
+                              ✏️
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline-danger"
+                              onClick={() => handleDeleteDepartment(department.id, department.name)}
+                              title="Delete Department"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -628,6 +1085,24 @@ const Admin = () => {
                     <option value="Leadership">Leadership</option>
                     <option value="Technical">Technical</option>
                     <option value="Soft Skills">Soft Skills</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Department *</Form.Label>
+                  <Form.Select
+                    value={courseForm.department}
+                    onChange={(e) => setCourseForm({...courseForm, department: e.target.value})}
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(dept => (
+                      <option key={dept.id} value={dept.name}>{dept.name}</option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -767,6 +1242,75 @@ const Admin = () => {
           </Button>
           <Button variant="success" onClick={handleApproveCompletion}>
             ✅ Approve
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Department Modal */}
+      <Modal show={showDepartmentModal} onHide={closeDepartmentModal} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedDepartmentForEdit ? 'Edit Department' : 'Add New Department'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={selectedDepartmentForEdit ? handleUpdateDepartment : handleCreateDepartment}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Department Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={departmentForm.name}
+                    onChange={(e) => setDepartmentForm({...departmentForm, name: e.target.value})}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Description (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={departmentForm.description}
+                    onChange={(e) => setDepartmentForm({...departmentForm, description: e.target.value})}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Available Roles (at least one)</Form.Label>
+              {departmentForm.roles.map((role, index) => (
+                <div key={index} className="d-flex align-items-center mb-2">
+                  <Form.Control
+                    type="text"
+                    value={role}
+                    onChange={(e) => updateRole(index, e.target.value)}
+                    placeholder={`Role ${index + 1}`}
+                    style={{ width: 'calc(100% - 150px)' }}
+                  />
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={() => removeRoleField(index)}
+                    className="ms-2"
+                    style={{ borderRadius: '20px' }}
+                  >
+                    ✖️
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline-primary" onClick={addRoleField} className="mt-2">
+                Add Role
+              </Button>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={closeDepartmentModal}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={selectedDepartmentForEdit ? handleUpdateDepartment : handleCreateDepartment}>
+            {selectedDepartmentForEdit ? 'Update Department' : 'Create Department'}
           </Button>
         </Modal.Footer>
       </Modal>

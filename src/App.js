@@ -15,6 +15,7 @@ import CourseDetail from './pages/CourseDetail';
 import LessonView from './pages/LessonView';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import AdminLogin from './pages/AdminLogin';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -47,6 +48,7 @@ const AppRoutes = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/admin-login" element={user ? <Navigate to="/dashboard" /> : <AdminLogin />} />
             <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
             <Route 
               path="/dashboard" 

@@ -257,6 +257,13 @@ const Login = () => {
                         Sign Up
                       </Link>
                     </p>
+                    <hr className="my-3" />
+                    <p className="text-muted small">
+                      Admin? {' '}
+                      <Link to="/admin-login" className="text-decoration-none fw-semibold text-primary">
+                        Admin Login
+                      </Link>
+                    </p>
                   </div>
                 </Card.Body>
               </Card>
