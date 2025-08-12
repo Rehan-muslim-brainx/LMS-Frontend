@@ -521,7 +521,10 @@ const Admin = () => {
         roles: filteredRoles
       };
 
-      await axios.put(`buildApiUrl(getEndpoint('DEPARTMENTS')${selectedDepartmentForEdit.id}`, departmentData, {
+      console.log('Updating department:', selectedDepartmentForEdit.id, departmentData);
+      console.log('Update URL:', buildApiUrl(`/api/departments/${selectedDepartmentForEdit.id}`));
+
+      await axios.put(buildApiUrl(`/api/departments/${selectedDepartmentForEdit.id}`), departmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -532,7 +535,9 @@ const Admin = () => {
       fetchData();
     } catch (error) {
       console.error('Update department error:', error);
-      showAlert(error.response?.data?.message || 'Error updating department', 'danger');
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Error updating department';
+      showAlert(errorMessage, 'danger');
     }
   };
 
@@ -540,7 +545,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete the "${departmentName}" department? This action cannot be undone and will affect existing users in this department.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`buildApiUrl(getEndpoint('DEPARTMENTS')${departmentId}`, {
+        await axios.delete(buildApiUrl(`/api/departments/${departmentId}`), {
           headers: { Authorization: `Bearer ${token}` }
         });
 
