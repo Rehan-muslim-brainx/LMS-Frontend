@@ -127,31 +127,31 @@ const Admin = () => {
       const token = localStorage.getItem('token');
       
       // Fetch courses
-      const coursesResponse = await axios.get('buildApiUrl(getEndpoint('COURSES')', {
+      const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES')), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCourses(coursesResponse.data);
 
       // Fetch users
-      const usersResponse = await axios.get('buildApiUrl(getEndpoint('USERS')', {
+      const usersResponse = await axios.get(buildApiUrl(getEndpoint('USERS')), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(usersResponse.data);
 
       // Fetch pending approvals
-      const pendingResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_PENDING-APPROVAL')', {
+      const pendingResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_PENDING_APPROVAL')), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPendingApprovals(pendingResponse.data);
 
       // Fetch completed enrollments
-      const completedResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_COMPLETED')', {
+      const completedResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_COMPLETED')), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCompletedEnrollments(completedResponse.data);
 
       // Fetch departments
-      const departmentsResponse = await axios.get('buildApiUrl(getEndpoint('DEPARTMENTS')');
+      const departmentsResponse = await axios.get(buildApiUrl(getEndpoint('DEPARTMENTS')));
       setDepartments(departmentsResponse.data);
 
       setLoading(false);
@@ -208,7 +208,7 @@ const Admin = () => {
     formData.append('file', selectedFile);
 
     try {
-      const response = await axios.post('buildApiUrl(getEndpoint('UPLOAD')', formData, {
+      const response = await axios.post(buildApiUrl(getEndpoint('UPLOAD')), formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -229,7 +229,7 @@ const Admin = () => {
     formData.append('file', selectedImageFile);
 
     try {
-      const response = await axios.post('buildApiUrl(getEndpoint('UPLOAD')', formData, {
+      const response = await axios.post(buildApiUrl(getEndpoint('UPLOAD')), formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -277,12 +277,12 @@ const Admin = () => {
       };
 
       if (selectedCourse) {
-        await axios.put(`buildApiUrl(getEndpoint('COURSES_')${selectedCourse.id}`, courseData, {
+        await axios.put(buildApiUrl(`${getEndpoint('COURSES')}/${selectedCourse.id}`), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course updated successfully!', 'success');
       } else {
-        await axios.post('buildApiUrl(getEndpoint('COURSES')', courseData, {
+        await axios.post(buildApiUrl(getEndpoint('COURSES')), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course created successfully!', 'success');
@@ -329,7 +329,7 @@ const Admin = () => {
   const handleDeleteCourse = async (courseId) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        await axios.delete(`buildApiUrl(getEndpoint('COURSES_')${courseId}`, {
+        await axios.delete(buildApiUrl(`/api/courses/${courseId}`), {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course deleted successfully!', 'success');
@@ -362,7 +362,7 @@ const Admin = () => {
   const handleApproveCompletion = async () => {
     if (window.confirm(`Are you sure you want to approve the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
       try {
-        await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${selectedApproval.id}/approve`, 
+        await axios.post(buildApiUrl(`/api/enrollments/${selectedApproval.id}/approve`), 
           { notes: approvalNotes },
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
         );
@@ -381,7 +381,7 @@ const Admin = () => {
   const handleRejectCompletion = async () => {
     if (window.confirm(`Are you sure you want to reject the completion request for "${selectedApproval.user?.name}" in course "${selectedApproval.course?.title}"?`)) {
       try {
-        await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${selectedApproval.id}/reject`, 
+        await axios.post(buildApiUrl(`/api/enrollments/${selectedApproval.id}/reject`), 
           { notes: approvalNotes },
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
         );
@@ -411,7 +411,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`buildApiUrl(getEndpoint('USERS_')${userId}`, {
+        await axios.delete(buildApiUrl(`/api/users/${userId}`), {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -428,7 +428,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to block user "${userName}"? Blocked users cannot access the system.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`buildApiUrl(getEndpoint('USERS_')${userId}/block`, {}, {
+        await axios.put(buildApiUrl(`/api/users/${userId}/block`), {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -475,7 +475,7 @@ const Admin = () => {
         roles: filteredRoles
       };
 
-      await axios.post('buildApiUrl(getEndpoint('DEPARTMENTS')', departmentData, {
+      await axios.post(buildApiUrl(getEndpoint('DEPARTMENTS')), departmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

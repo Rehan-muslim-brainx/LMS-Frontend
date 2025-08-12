@@ -21,6 +21,9 @@ const config = {
     COURSES: '/api/courses',
     USERS: '/api/users',
     ENROLLMENTS: '/api/enrollments',
+    ENROLLMENTS_PENDING_APPROVAL: '/api/enrollments/pending-approval',
+    ENROLLMENTS_COMPLETED: '/api/enrollments/completed',
+    ENROLLMENTS_MY_ENROLLMENTS: '/api/enrollments/my-enrollments',
     DEPARTMENTS: '/api/departments',
     UPLOAD: '/api/upload',
     ASSETS: '/api/assets',
@@ -51,7 +54,12 @@ export const buildApiUrl = (endpoint) => {
     return config.API_BASE_URL + config.ENDPOINTS[endpoint];
   }
   
-  // Handle custom paths
+  // Handle custom paths (like '/api/enrollments/123/approve')
+  if (endpoint.startsWith('/api/')) {
+    return config.API_BASE_URL + endpoint;
+  }
+  
+  // Handle relative paths
   return config.API_BASE_URL + endpoint;
 };
 
