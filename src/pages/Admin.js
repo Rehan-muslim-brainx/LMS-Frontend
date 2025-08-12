@@ -35,6 +35,7 @@ const Admin = () => {
   // Filter states
   const [approvalDepartmentFilter, setApprovalDepartmentFilter] = useState('');
   const [completionDepartmentFilter, setCompletionDepartmentFilter] = useState('');
+  const [completionUserFilter, setCompletionUserFilter] = useState('');
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -91,9 +92,9 @@ const Admin = () => {
 
   useEffect(() => {
     if (completedEnrollments.length > 0) {
-      filterCompletionsByDepartment(completionDepartmentFilter);
+      filterCompletionsByDepartment(completionDepartmentFilter, completionUserFilter);
     }
-  }, [completedEnrollments, completionDepartmentFilter]);
+  }, [completedEnrollments, completionDepartmentFilter, completionUserFilter]);
 
   // Check if user is admin
   if (!user || user.role !== 'admin') {
@@ -178,14 +179,24 @@ const Admin = () => {
     }
   };
 
-  const filterCompletionsByDepartment = (department) => {
-    if (!department) {
-      setFilteredCompletions(completedEnrollments);
-    } else {
-      setFilteredCompletions(completedEnrollments.filter(completion => completion.user_department === department));
+  const filterCompletionsByDepartment = (department, userFilter = completionUserFilter) => {
+    let filtered = completedEnrollments;
+    
+    // Filter by department
+    if (department) {
+      filtered = filtered.filter(completion => completion.user_department === department);
     }
+    
+    // Filter by user
+    if (userFilter) {
+      filtered = filtered.filter(completion => 
+        completion.user?.name?.toLowerCase().includes(userFilter.toLowerCase()) ||
+        completion.user?.email?.toLowerCase().includes(userFilter.toLowerCase())
+      );
+    }
+    
+    setFilteredCompletions(filtered);
   };
-
 
 
   const showAlert = (message, type) => {
@@ -277,11 +288,13 @@ const Admin = () => {
       };
 
       if (selectedCourse) {
-        await axios.put(buildApiUrl(`${getEndpoint('COURSES')}/${selectedCourse.id}`), courseData, {
+        console.log('Updating course:', selectedCourse.id, courseData);
+        await axios.put(buildApiUrl(`/api/courses/${selectedCourse.id}`), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course updated successfully!', 'success');
       } else {
+        console.log('Creating course:', courseData);
         await axios.post(buildApiUrl(getEndpoint('COURSES')), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
@@ -306,7 +319,9 @@ const Admin = () => {
       fetchData();
     } catch (error) {
       console.error('Error saving course:', error);
-      showAlert('Error saving course', 'danger');
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Error saving course';
+      showAlert(errorMessage, 'danger');
     }
   };
 
@@ -445,7 +460,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to unblock user "${userName}"? They will be able to access the system again.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`buildApiUrl(getEndpoint('USERS_')${userId}/unblock`, {}, {
+        await axios.put(`buildApiUrl(getEndpoint('USERS')${userId}/unblock`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -506,7 +521,7 @@ const Admin = () => {
         roles: filteredRoles
       };
 
-      await axios.put(`buildApiUrl(getEndpoint('DEPARTMENTS_')${selectedDepartmentForEdit.id}`, departmentData, {
+      await axios.put(`buildApiUrl(getEndpoint('DEPARTMENTS')${selectedDepartmentForEdit.id}`, departmentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -525,7 +540,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete the "${departmentName}" department? This action cannot be undone and will affect existing users in this department.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`buildApiUrl(getEndpoint('DEPARTMENTS_')${departmentId}`, {
+        await axios.delete(`buildApiUrl(getEndpoint('DEPARTMENTS')${departmentId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -903,10 +918,10 @@ const Admin = () => {
           }}>
             <Card.Body>
               <Row className="mb-3">
-                <Col md={6}>
+                <Col md={4}>
                   <h5>Completed Courses ({filteredCompletions.length})</h5>
                 </Col>
-                <Col md={6}>
+                <Col md={4}>
                   <Form.Select
                     value={completionDepartmentFilter}
                     onChange={(e) => setCompletionDepartmentFilter(e.target.value)}
@@ -918,6 +933,15 @@ const Admin = () => {
                     ))}
                   </Form.Select>
                 </Col>
+                <Col md={4}>
+                  <Form.Control
+                    type="text"
+                    placeholder="Filter by user name or email..."
+                    value={completionUserFilter}
+                    onChange={(e) => setCompletionUserFilter(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  />
+                </Col>
               </Row>
 
               {filteredCompletions.length === 0 ? (
@@ -925,8 +949,8 @@ const Admin = () => {
                   <Card.Body>
                     <h4>No completed courses yet</h4>
                     <p className="text-muted">
-                      {completionDepartmentFilter 
-                        ? `No completed courses in ${completionDepartmentFilter} department`
+                      {completionDepartmentFilter || completionUserFilter
+                        ? `No completed courses found${completionDepartmentFilter ? ` in ${completionDepartmentFilter} department` : ''}${completionUserFilter ? ` for "${completionUserFilter}"` : ''}`
                         : 'Users will appear here once they complete courses'
                       }
                     </p>

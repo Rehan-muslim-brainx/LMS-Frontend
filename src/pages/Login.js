@@ -25,7 +25,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('buildApiUrl(getEndpoint('AUTH.LOGIN')', {
+      console.log('Attempting login for:', email);
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.LOGIN')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,17 +34,27 @@ const Login = () => {
         body: JSON.stringify({ email }),
       });
 
+      console.log('Login response status:', response.status);
       const data = await response.json();
+      console.log('Login response data:', data);
 
       if (response.ok) {
         setOtpStep(true);
         showAlert('OTP sent to your email. Please check your inbox.', 'success');
       } else {
-        showAlert(data.message || 'Login failed');
+        if (response.status === 429) {
+          showAlert('Too many requests. Please wait a moment and try again.', 'warning');
+        } else {
+          showAlert(data.message || 'Login failed', 'danger');
+        }
       }
     } catch (error) {
-      console.error('Login error:', error);
-      showAlert('Network error. Please try again.');
+      console.error('Login network error:', error);
+      if (error.message.includes('fetch')) {
+        showAlert('Cannot connect to server. Please check if the backend is running.', 'danger');
+      } else {
+        showAlert('Network error. Please check your connection and try again.', 'danger');
+      }
     } finally {
       setLoading(false);
     }
@@ -54,7 +65,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('buildApiUrl(getEndpoint('AUTH.VERIFY_LOGIN')', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.VERIFY_LOGIN')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +96,7 @@ const Login = () => {
   const handleResendOTP = async () => {
     setLoading(true);
     try {
-      const response = await fetch('buildApiUrl(getEndpoint('AUTH.RESEND_OTP')', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.RESEND_OTP')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

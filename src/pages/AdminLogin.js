@@ -34,7 +34,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('buildApiUrl(getEndpoint('AUTH.ADMIN_LOGIN')', {
+      const response = await fetch(buildApiUrl(getEndpoint('AUTH.ADMIN_LOGIN')), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

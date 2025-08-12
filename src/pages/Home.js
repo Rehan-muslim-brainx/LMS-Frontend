@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { buildApiUrl, getEndpoint } from '../config';
-
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FaPlay, FaUsers, FaClock, FaStar, FaLink } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { buildApiUrl, getEndpoint } from '../config';
 
 const Home = () => {
   const { user } = useAuth();
@@ -18,7 +17,7 @@ const Home = () => {
   useEffect(() => {
     const fetchFeaturedCourses = async () => {
       try {
-        const response = await axios.get('buildApiUrl(getEndpoint('COURSES')');
+        const response = await axios.get(buildApiUrl(getEndpoint('COURSES')));
         // Get first 3 courses as featured
         setFeaturedCourses(response.data.slice(0, 3));
       } catch (error) {

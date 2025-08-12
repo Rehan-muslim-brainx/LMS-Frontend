@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { buildApiUrl, getEndpoint } from '../config';
-
 import axios from 'axios';
+import { buildApiUrl, getEndpoint } from '../config';
 
 const AuthContext = createContext();
 
@@ -32,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get('buildApiUrl(getEndpoint('AUTH.ME')');
+          const response = await axios.get(buildApiUrl(getEndpoint('AUTH.ME')));
           setUser(response.data);
         } catch (error) {
           console.error('Auth check failed:', error);

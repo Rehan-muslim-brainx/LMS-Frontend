@@ -23,7 +23,7 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         // Fetch user enrollments
-        const enrollmentsResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_MY-ENROLLMENTS')', {
+        const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTSMY_ENROLLMENTS')), {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setEnrollments(enrollmentsResponse.data);
@@ -31,7 +31,7 @@ const Dashboard = () => {
         // Fetch all courses for project managers and admins
         const allowedRoles = ['associate_project_manager', 'assistant_project_manager', 'principal_software_engineer', 'admin'];
         if (allowedRoles.includes(user.role)) {
-          const coursesResponse = await axios.get('buildApiUrl(getEndpoint('COURSES')');
+          const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES')));
           setCourses(coursesResponse.data);
         }
 

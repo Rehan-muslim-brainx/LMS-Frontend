@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { buildApiUrl, getEndpoint } from '../config';
-
-import { Container, Row, Col, Card, Button, Badge, Form, InputGroup, Alert, Modal } from 'react-bootstrap';
-import { FaLink } from 'react-icons/fa';
+import { Container, Row, Col, Card, Button, Modal, Badge, Alert, Form, InputGroup } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { buildApiUrl, getEndpoint } from '../config';
+import { FaLink } from 'react-icons/fa';
 
 const Courses = () => {
   const { user } = useAuth();
@@ -21,29 +20,47 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+  }, [user]); // Add user as dependency to refresh when user changes
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get('buildApiUrl(getEndpoint('COURSES')');
-      setCourses(response.data);
+      const response = await axios.get(buildApiUrl(getEndpoint('COURSES')));
       
-      // Fetch enrollment statuses for each course if user is logged in
-      if (user) {
-        const statuses = {};
-        for (const course of response.data) {
-          try {
-            const statusResponse = await axios.get(`buildApiUrl(getEndpoint('ENROLLMENTS_CHECK_')${course.id}`, {
-              headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            statuses[course.id] = statusResponse.data;
-          } catch (error) {
-            console.error('Error checking enrollment status:', error);
-            statuses[course.id] = { isEnrolled: false, status: null };
-          }
-        }
-        setEnrollmentStatuses(statuses);
+      // Filter courses by user's department and include "general" department
+      let filteredCourses = response.data;
+      if (user && user.department) {
+        console.log('User department:', user.department);
+        console.log('Available courses:', response.data.map(c => ({id: c.id, title: c.title, department: c.department})));
+        
+        filteredCourses = response.data.filter(course => {
+          const courseDepLower = (course.department || '').toLowerCase();
+          const userDepLower = (user.department || '').toLowerCase();
+          
+          const isUserDepartment = courseDepLower === userDepLower;
+          const isGeneral = courseDepLower === 'general';
+          
+          return isUserDepartment || isGeneral;
+        });
+        
+        console.log('Filtered courses for user:', filteredCourses.map(c => ({id: c.id, title: c.title, department: c.department})));
       }
+      
+      setCourses(filteredCourses);
+      
+      // Check enrollment status for each course
+      const statusMap = {};
+      for (const course of filteredCourses) {
+        try {
+          const statusResponse = await axios.get(buildApiUrl(`/api/enrollments/check/${course.id}`), {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          });
+          statusMap[course.id] = statusResponse.data;
+        } catch (error) {
+          console.error(`Error checking enrollment for course ${course.id}:`, error);
+          statusMap[course.id] = null;
+        }
+      }
+      setEnrollmentStatuses(statusMap);
     } catch (error) {
       console.error('Error fetching courses:', error);
       showAlert('Error loading courses', 'danger');
@@ -85,7 +102,7 @@ const Courses = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('buildApiUrl(getEndpoint('ENROLLMENTS')', 
+      await axios.post(buildApiUrl(getEndpoint('ENROLLMENTS')), 
         { course_id: courseId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -111,7 +128,7 @@ const Courses = () => {
       const token = localStorage.getItem('token');
       
       // First, get the user's enrollments to find the enrollment ID for this course
-      const enrollmentsResponse = await axios.get('buildApiUrl(getEndpoint('ENROLLMENTS_MY-ENROLLMENTS')', {
+      const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_MY_ENROLLMENTS')), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -123,7 +140,7 @@ const Courses = () => {
         return;
       }
 
-      await axios.post(`buildApiUrl(getEndpoint('ENROLLMENTS_')${enrollment.id}/request-completion`, 
+      await axios.post(buildApiUrl(`/api/enrollments/${enrollment.id}/request-completion`), 
         { notes: 'Course completion requested by user' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
