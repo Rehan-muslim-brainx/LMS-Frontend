@@ -6,7 +6,7 @@ console.log('All REACT_APP_ variables:', Object.keys(process.env).filter(key => 
 
 const config = {
   // API Base URL - with proper fallback for production
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'https://lms-backend-rehan-muslims-projects.vercel.app',
+  API_BASE_URL: process.env.REACT_APP_API_URL || 'https://lms-backend-dusky-nine.vercel.app',
   
   // Supabase Configuration (if needed)
   SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
