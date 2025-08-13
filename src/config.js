@@ -1,7 +1,7 @@
 // API Configuration
 const config = {
   // API Base URL - defaults to localhost for development
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  API_BASE_URL: process.env.REACT_APP_API_URL ,
   
   // Supabase Configuration (if needed)
   SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
