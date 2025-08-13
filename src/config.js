@@ -1,7 +1,12 @@
 // API Configuration
+console.log('🔍 DEBUGGING ENVIRONMENT VARIABLES:');
+console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('All REACT_APP_ variables:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
+
 const config = {
-  // API Base URL - defaults to localhost for development
-  API_BASE_URL: process.env.REACT_APP_API_URL ,
+  // API Base URL - with proper fallback for production
+  API_BASE_URL: process.env.REACT_APP_API_URL || 'https://lms-backend-rehan-muslims-projects.vercel.app',
   
   // Supabase Configuration (if needed)
   SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
@@ -31,6 +36,8 @@ const config = {
     TEST: '/api/test'
   }
 };
+
+console.log('🎯 FINAL API_BASE_URL BEING USED:', config.API_BASE_URL);
 
 // Helper function to build full API URLs
 export const buildApiUrl = (endpoint) => {
