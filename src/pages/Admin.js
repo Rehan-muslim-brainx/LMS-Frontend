@@ -417,8 +417,27 @@ const Admin = () => {
     setShowApprovalModal(true);
   };
 
+  // Get completion count for a user
   const getCompletionCount = (userId) => {
     return completedEnrollments.filter(e => e.user_id === userId).length;
+  };
+
+  // Calculate enrollment statistics for dashboard
+  const getEnrollmentStats = () => {
+    const totalEnrollments = users.length * courses.length; // Theoretical max
+    const activeEnrollments = users.filter(user => 
+      completedEnrollments.some(e => e.user_id === user.id)
+    ).length;
+    
+    const completionRate = users.length > 0 ? ((activeEnrollments / users.length) * 100).toFixed(1) : 0;
+    const avgCoursesPerUser = users.length > 0 ? (completedEnrollments.length / users.length).toFixed(1) : 0;
+    
+    return {
+      totalEnrollments,
+      activeEnrollments,
+      completionRate,
+      avgCoursesPerUser
+    };
   };
 
   // User management functions
@@ -655,7 +674,314 @@ const Admin = () => {
           </Col>
         </Row>
 
-      <Tabs defaultActiveKey="courses" className="mb-4">
+      <Tabs defaultActiveKey="dashboard" className="mb-4">
+        <Tab eventKey="dashboard" title="📊 Dashboard Insights">
+          <Card className="shadow-lg border-0" style={{ 
+            backgroundColor: 'rgba(255,255,255,0.95)', 
+            backdropFilter: 'blur(10px)',
+            borderRadius: '15px'
+          }}>
+            <Card.Body>
+              <Row className="mb-4">
+                <Col>
+                  <h4 className="text-primary mb-3">📈 LMS Analytics Overview</h4>
+                </Col>
+              </Row>
+
+              {/* Key Metrics Cards */}
+              <Row className="mb-4">
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{courses.length}</h2>
+                      <p className="mb-0">Total Courses</p>
+                      <small>Available for enrollment</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{users.length}</h2>
+                      <p className="mb-0">Total Users</p>
+                      <small>Registered learners</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{pendingApprovals.length}</h2>
+                      <p className="mb-0">Pending Approvals</p>
+                      <small>Awaiting admin review</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{completedEnrollments.length}</h2>
+                      <p className="mb-0">Completed Courses</p>
+                      <small>Successfully finished</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Additional Statistics Row */}
+              <Row className="mb-4">
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{getEnrollmentStats().completionRate}%</h2>
+                      <p className="mb-0">Completion Rate</p>
+                      <small>Users who completed courses</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{getEnrollmentStats().avgCoursesPerUser}</h2>
+                      <p className="mb-0">Avg Courses/User</p>
+                      <small>Average completions per user</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{departments.length}</h2>
+                      <p className="mb-0">Departments</p>
+                      <small>Active departments</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={3} md={6} className="mb-3">
+                  <Card className="text-center border-0 shadow-sm" style={{ 
+                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    borderRadius: '15px'
+                  }}>
+                    <Card.Body className="text-white">
+                      <h2 className="mb-2">{getEnrollmentStats().activeEnrollments}</h2>
+                      <p className="mb-0">Active Learners</p>
+                      <small>Users with completions</small>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Department Distribution */}
+              <Row className="mb-4">
+                <Col lg={6} className="mb-3">
+                  <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                    <Card.Header className="bg-light border-0">
+                      <h6 className="mb-0">👥 Users by Department</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      {departments.length > 0 ? (
+                        <div>
+                          {departments.map(dept => {
+                            const userCount = users.filter(user => user.department === dept.name).length;
+                            const percentage = users.length > 0 ? ((userCount / users.length) * 100).toFixed(1) : 0;
+                            return (
+                              <div key={dept.name} className="mb-3">
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <span className="fw-medium">{dept.name}</span>
+                                  <span className="text-muted">{userCount} users ({percentage}%)</span>
+                                </div>
+                                <div className="progress" style={{ height: '8px', borderRadius: '10px' }}>
+                                  <div 
+                                    className="progress-bar" 
+                                    style={{ 
+                                      width: `${percentage}%`,
+                                      background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-muted text-center">No departments available</p>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={6} className="mb-3">
+                  <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                    <Card.Header className="bg-light border-0">
+                      <h6 className="mb-0">📚 Courses by Department</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      {departments.length > 0 ? (
+                        <div>
+                          {departments.map(dept => {
+                            const courseCount = courses.filter(course => course.department === dept.name).length;
+                            const percentage = courses.length > 0 ? ((courseCount / courses.length) * 100).toFixed(1) : 0;
+                            return (
+                              <div key={dept.name} className="mb-3">
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                  <span className="fw-medium">{dept.name}</span>
+                                  <span className="text-muted">{courseCount} courses ({percentage}%)</span>
+                                </div>
+                                <div className="progress" style={{ height: '8px', borderRadius: '10px' }}>
+                                  <div 
+                                    className="progress-bar" 
+                                    style={{ 
+                                      width: `${percentage}%`,
+                                      background: 'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)'
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-muted text-center">No departments available</p>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* Recent Activity */}
+              <Row>
+                <Col lg={6} className="mb-3">
+                  <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                    <Card.Header className="bg-light border-0">
+                      <h6 className="mb-0">🕒 Recent Completion Requests</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      {pendingApprovals.length > 0 ? (
+                        <div>
+                          {pendingApprovals.slice(0, 5).map(approval => (
+                            <div key={approval.id} className="d-flex align-items-center mb-2 p-2" style={{ 
+                              backgroundColor: 'rgba(255, 193, 7, 0.1)', 
+                              borderRadius: '8px' 
+                            }}>
+                              <div className="me-3">
+                                <div className="bg-warning rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                  <span className="text-white">⏳</span>
+                                </div>
+                              </div>
+                              <div className="flex-grow-1">
+                                <div className="fw-medium">{approval.user?.name}</div>
+                                <small className="text-muted">{approval.course?.title}</small>
+                              </div>
+                              <Badge bg="warning" className="ms-2">Pending</Badge>
+                            </div>
+                          ))}
+                          {pendingApprovals.length > 5 && (
+                            <div className="text-center mt-2">
+                              <small className="text-muted">+{pendingApprovals.length - 5} more requests</small>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-muted text-center">No pending approvals</p>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+                
+                <Col lg={6} className="mb-3">
+                  <Card className="border-0 shadow-sm" style={{ borderRadius: '15px' }}>
+                    <Card.Header className="bg-light border-0">
+                      <h6 className="mb-0">🎯 System Health</h6>
+                    </Card.Header>
+                    <Card.Body>
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <span>Course Coverage</span>
+                          <span className="fw-medium">{departments.length > 0 ? 'Good' : 'Needs Setup'}</span>
+                        </div>
+                        <div className="progress" style={{ height: '8px', borderRadius: '10px' }}>
+                          <div 
+                            className="progress-bar" 
+                            style={{ 
+                              width: `${departments.length > 0 ? 100 : 0}%`,
+                              background: departments.length > 0 ? 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)' : '#dc3545'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <span>User Engagement</span>
+                          <span className="fw-medium">
+                            {completedEnrollments.length > 0 ? 'Active' : 'New'}
+                          </span>
+                        </div>
+                        <div className="progress" style={{ height: '8px', borderRadius: '10px' }}>
+                          <div 
+                            className="progress-bar" 
+                            style={{ 
+                              width: `${completedEnrollments.length > 0 ? 100 : 50}%`,
+                              background: completedEnrollments.length > 0 ? 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)' : 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <span>Admin Workload</span>
+                          <span className="fw-medium">
+                            {pendingApprovals.length === 0 ? 'Clear' : pendingApprovals.length < 5 ? 'Manageable' : 'Busy'}
+                          </span>
+                        </div>
+                        <div className="progress" style={{ height: '8px', borderRadius: '10px' }}>
+                          <div 
+                            className="progress-bar" 
+                            style={{ 
+                              width: `${pendingApprovals.length === 0 ? 0 : pendingApprovals.length < 5 ? 50 : 100}%`,
+                              background: pendingApprovals.length === 0 ? 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)' : 
+                                         pendingApprovals.length < 5 ? 'linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%)' : 
+                                         'linear-gradient(90deg, #f093fb 0%, #f5576c 100%)'
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        </Tab>
+
         <Tab eventKey="courses" title="Course Management">
           <Card className="shadow-lg border-0" style={{ 
             backgroundColor: 'rgba(255,255,255,0.95)', 
