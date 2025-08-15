@@ -225,7 +225,7 @@ const Admin = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      return response.data.filename;
+      return response.data.url; // Return full URL instead of just filename
     } catch (error) {
       console.error('Error uploading file:', error);
       showAlert('Error uploading file', 'danger');
@@ -246,7 +246,7 @@ const Admin = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      return `/uploads/${response.data.filename}`;
+      return response.data.url; // Return full URL from response
     } catch (error) {
       console.error('Error uploading image:', error);
       showAlert('Error uploading image', 'danger');
