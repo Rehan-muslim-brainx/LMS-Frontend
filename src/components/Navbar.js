@@ -70,57 +70,61 @@ const NavigationBar = () => {
         />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link 
-              as={Link} 
-              to="/" 
-              onClick={handleNavClick}
-              className="nav-link-custom"
-              style={{ 
-                color: 'rgba(255,255,255,0.9)',
-                marginRight: '1rem',
-                fontWeight: '500',
-                transition: 'all 0.3s ease',
-                borderRadius: '8px',
-                padding: '0.5rem 1rem'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = 'white';
-                e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'rgba(255,255,255,0.9)';
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <FaHome className="me-1" />
-              Home
-            </Nav.Link>
-            <Nav.Link 
-              as={Link} 
-              to="/courses" 
-              onClick={handleNavClick}
-              className="nav-link-custom"
-              style={{ 
-                color: 'rgba(255,255,255,0.9)',
-                marginRight: '1rem',
-                fontWeight: '500',
-                transition: 'all 0.3s ease',
-                borderRadius: '8px',
-                padding: '0.5rem 1rem'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = 'white';
-                e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'rgba(255,255,255,0.9)';
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <FaBook className="me-1" />
-              Courses
-            </Nav.Link>
-            {user && (
+            {user?.role !== 'admin' && user?.role !== 'general' && (
+              <Nav.Link 
+                as={Link} 
+                to="/" 
+                onClick={handleNavClick}
+                className="nav-link-custom"
+                style={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  marginRight: '1rem',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  borderRadius: '8px',
+                  padding: '0.5rem 1rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = 'white';
+                  e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = 'rgba(255,255,255,0.9)';
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                <FaHome className="me-1" />
+                Home
+              </Nav.Link>
+            )}
+            {user?.role !== 'admin' && user?.role !== 'general' && (
+              <Nav.Link 
+                as={Link} 
+                to="/courses" 
+                onClick={handleNavClick}
+                className="nav-link-custom"
+                style={{ 
+                  color: 'rgba(255,255,255,0.9)',
+                  marginRight: '1rem',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease',
+                  borderRadius: '8px',
+                  padding: '0.5rem 1rem'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = 'white';
+                  e.target.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = 'rgba(255,255,255,0.9)';
+                  e.target.style.backgroundColor = 'transparent';
+                }}
+              >
+                <FaBook className="me-1" />
+                Courses
+              </Nav.Link>
+            )}
+            {user && user?.role !== 'admin' && user?.role !== 'general' && (
               <Nav.Link 
                 as={Link} 
                 to="/dashboard" 
@@ -147,7 +151,7 @@ const NavigationBar = () => {
                 Dashboard
               </Nav.Link>
             )}
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'general') && (
               <Nav.Link 
                 as={Link} 
                 to="/admin" 
