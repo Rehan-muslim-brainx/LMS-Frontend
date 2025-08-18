@@ -411,7 +411,7 @@ const Courses = () => {
                 <div className="text-center">
                   <Button
                     variant="primary"
-                    href={`${buildApiUrl('')}/uploads/${selectedDocument.document_url}`}
+                    href={selectedDocument.document_url}
                     target="_blank"
                     className="me-2"
                   >
@@ -419,7 +419,7 @@ const Courses = () => {
                   </Button>
                   <Button
                     variant="outline-secondary"
-                    onClick={() => window.open(`${buildApiUrl('')}/uploads/${selectedDocument.document_url}`, '_blank')}
+                    onClick={() => window.open(selectedDocument.document_url, '_blank')}
                   >
                     👁️ View Online
                   </Button>
