@@ -573,7 +573,7 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to unblock user "${userName}"? They will be able to access the system again.`)) {
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`buildApiUrl(getEndpoint('USERS')${userId}/unblock`, {}, {
+        await axios.put(buildApiUrl(`/api/users/${userId}/unblock`), {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
