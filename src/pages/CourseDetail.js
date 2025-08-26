@@ -15,6 +15,12 @@ const CourseDetail = () => {
   const [enrollmentStatus, setEnrollmentStatus] = useState(null);
 
   useEffect(() => {
+    // Redirect non-logged users to home
+    if (!user) {
+      window.location.href = '/';
+      return;
+    }
+
     const fetchCourseData = async () => {
       try {
         // Fetch course details

@@ -19,27 +19,93 @@ const Dashboard = () => {
     pendingApproval: 0
   });
 
+  // Helper function to fix image URLs
+  const getImageUrl = (imageUrl) => {
+    console.log('🔍 getImageUrl called with:', imageUrl);
+    console.log('🔍 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    
+    if (!imageUrl) {
+      console.log('🔍 No image URL, using default');
+      return 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+    }
+    
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http')) {
+      console.log('🔍 Full URL detected, returning as is');
+      return imageUrl;
+    }
+    
+    // If it's a relative path, construct full URL
+    if (imageUrl.startsWith('/uploads/')) {
+      const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${imageUrl}`;
+      console.log('🔍 Constructed full URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    // Default fallback
+    console.log('🔍 Using default fallback image');
+    return 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+  };
+
   useEffect(() => {
+    // Redirect non-logged users to home
+    if (!user) {
+      window.location.href = '/';
+      return;
+    }
+
     const fetchDashboardData = async () => {
       try {
         // Fetch user enrollments
-        const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTSMY_ENROLLMENTS')), {
+        const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_MY_ENROLLMENTS')), {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        setEnrollments(enrollmentsResponse.data);
+        console.log('✅ Dashboard - Enrollments fetched:', enrollmentsResponse.data);
+        console.log('✅ Dashboard - User:', user);
+        
+        // Filter enrollments: hide deactivated courses unless completed
+        const filteredEnrollments = enrollmentsResponse.data.filter(enrollment => {
+          const course = enrollment.course;
+          
+          // Always show if course is active
+          if (course && course.is_active) {
+            return true;
+          }
+          
+          // For deactivated courses, only show if completed
+          if (course && !course.is_active) {
+            return enrollment.status === 'completed';
+          }
+          
+          // Default: show enrollment if course data is missing
+          return true;
+        });
+        
+        console.log('🔍 Dashboard - Filtered enrollments:', filteredEnrollments.length, 'of', enrollmentsResponse.data.length);
+        setEnrollments(filteredEnrollments);
 
         // Fetch all courses for project managers and admins
         const allowedRoles = ['associate_project_manager', 'assistant_project_manager', 'principal_software_engineer', 'admin'];
         if (allowedRoles.includes(user.role)) {
-          const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES')));
+          const token = localStorage.getItem('token');
+          const coursesResponse = await axios.get(buildApiUrl(getEndpoint('USER_COURSES')), {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           setCourses(coursesResponse.data);
         }
 
+        // Debug: Log enrollment data
+        console.log('🔍 Dashboard - All enrollments:', enrollmentsResponse.data);
+        console.log('🔍 Dashboard - User ID:', user.id);
+        console.log('🔍 Dashboard - Enrollment statuses:', enrollmentsResponse.data.map(e => ({id: e.id, status: e.status, course_id: e.course_id})));
+        
         // Calculate stats
         const totalCourses = enrollmentsResponse.data.length;
         const completedCourses = enrollmentsResponse.data.filter(e => e.status === 'completed').length;
         const inProgressCourses = enrollmentsResponse.data.filter(e => e.status === 'active').length;
         const pendingApproval = enrollmentsResponse.data.filter(e => e.status === 'completion_requested').length;
+
+        console.log('🔍 Dashboard - Stats calculated:', {totalCourses, completedCourses, inProgressCourses, pendingApproval});
 
         setStats({
           totalCourses,
@@ -234,13 +300,19 @@ const Dashboard = () => {
                   </Card>
                 ) : (
             <Row>
-              {enrollments.map((enrollment) => (
+              {enrollments.map((enrollment) => {
+                console.log('🔍 Rendering enrollment:', enrollment.id, 'Course image:', enrollment.course?.image_url);
+                return (
                 <Col key={enrollment.id} lg={4} md={6} className="mb-4">
                   <Card className="course-card h-100">
                     <Card.Img 
                       variant="top" 
-                      src={enrollment.course?.image_url || 'https://via.placeholder.com/300x200?text=Course+Image'} 
+                      src={getImageUrl(enrollment.course?.image_url)} 
                       className="course-image"
+                      onError={(e) => {
+                        console.log('❌ Image failed to load for enrollment:', enrollment.id);
+                        e.target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+                      }}
                     />
                     <Card.Body className="d-flex flex-column">
                       <div className="mb-2">
@@ -289,7 +361,8 @@ const Dashboard = () => {
                     </Card.Body>
                   </Card>
                 </Col>
-              ))}
+              );
+              })}
             </Row>
           )}
               </Card.Body>
@@ -309,47 +382,51 @@ const Dashboard = () => {
               <Card.Body>
                 <h3 className="mb-4">All Available Courses</h3>
                 <Row>
-                  {courses.map(course => (
-                    <Col key={course.id} lg={4} md={6} className="mb-4">
-                      <Card className="h-100 shadow border-0" style={{ 
-                        backgroundColor: 'rgba(255,255,255,0.9)', 
-                        borderRadius: '12px'
-                      }}>
-                        <Card.Img 
-                          variant="top" 
-                          src={course.image_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop'} 
-                          style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
-                          onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
-                          }}
-                        />
-                        <Card.Body className="d-flex flex-column p-3">
-                          <div className="mb-2">
-                            <Badge bg="success" className="me-2" style={{ borderRadius: '20px' }}>{course.category}</Badge>
-                            {course.document_url && <Badge bg="info" style={{ borderRadius: '20px' }}>📄</Badge>}
-                            {course.external_link && <Badge bg="success" style={{ borderRadius: '20px' }}>🔗</Badge>}
-                          </div>
-                          <Card.Title className="h6 mb-2 fw-bold">{course.title}</Card.Title>
-                          <Card.Text className="text-muted small mb-3">
-                            {course.description?.substring(0, 80)}...
-                          </Card.Text>
-                          <div className="mt-auto">
-                            <Button 
-                              as={Link} 
-                              to={`/courses/${course.id}`} 
-                              variant="success" 
-                              size="sm"
-                              className="w-100"
-                              style={{ borderRadius: '25px' }}
-                            >
-                              <FaPlay className="me-2" />
-                              View Course
-                            </Button>
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  ))}
+                  {courses.map(course => {
+                    console.log('🔍 Rendering course:', course.id, 'Course image:', course.image_url);
+                    return (
+                      <Col key={course.id} lg={4} md={6} className="mb-4">
+                        <Card className="h-100 shadow border-0" style={{ 
+                          backgroundColor: 'rgba(255,255,255,0.9)', 
+                          borderRadius: '12px'
+                        }}>
+                          <Card.Img 
+                            variant="top" 
+                            src={getImageUrl(course.image_url)} 
+                            style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
+                            onError={(e) => {
+                              console.log('❌ Image failed to load for course:', course.id);
+                              e.target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+                            }}
+                          />
+                          <Card.Body className="d-flex flex-column p-3">
+                            <div className="mb-2">
+                              <Badge bg="success" className="me-2" style={{ borderRadius: '20px' }}>{course.category}</Badge>
+                              {course.document_url && <Badge bg="info" style={{ borderRadius: '20px' }}>📄</Badge>}
+                              {course.external_link && <Badge bg="success" style={{ borderRadius: '20px' }}>🔗</Badge>}
+                            </div>
+                            <Card.Title className="h6 mb-2 fw-bold">{course.title}</Card.Title>
+                            <Card.Text className="text-muted small mb-3">
+                              {course.description?.substring(0, 80)}...
+                            </Card.Text>
+                            <div className="mt-auto">
+                              <Button 
+                                as={Link} 
+                                to={`/courses/${course.id}`} 
+                                variant="success" 
+                                size="sm"
+                                className="w-100"
+                                style={{ borderRadius: '25px' }}
+                              >
+                                <FaPlay className="me-2" />
+                                View Course
+                              </Button>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    );
+                  })}
                 </Row>
               </Card.Body>
             </Card>

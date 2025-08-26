@@ -16,6 +16,12 @@ const Home = () => {
 
   useEffect(() => {
     const fetchFeaturedCourses = async () => {
+      // Only fetch courses if user is logged in
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         const response = await axios.get(buildApiUrl(getEndpoint('COURSES')));
         // Get first 3 courses as featured
@@ -28,7 +34,7 @@ const Home = () => {
     };
 
     fetchFeaturedCourses();
-  }, []);
+  }, [user]);
 
   // Slider timer effect
   useEffect(() => {
@@ -77,13 +83,13 @@ const Home = () => {
       'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=250&fit=crop'
     ];
     
-    // If course has an uploaded image, use it
-    if (course.image_url && course.image_url.startsWith('/uploads/')) {
+    // Admin uploaded image takes priority - check if it's a full URL
+    if (course.image_url && course.image_url.startsWith('http')) {
       return course.image_url;
     }
     
-    // If course has an external image URL, use it
-    if (course.image_url && course.image_url.startsWith('http')) {
+    // If course has an uploaded image path, use it
+    if (course.image_url && course.image_url.startsWith('/uploads/')) {
       return course.image_url;
     }
     
@@ -149,7 +155,51 @@ const Home = () => {
         </Row>
 
         {/* Featured Courses Slider */}
-        {featuredCourses.length > 0 && (
+        {!user ? (
+          // Static content for non-logged in users
+          <Row className="mb-5">
+            <Col>
+              <div className="text-center mb-5">
+                <h2 className="text-white mb-3">Welcome to BRAINX Learning Platform</h2>
+                <p className="text-white-50 mb-0">
+                  Your internal learning hub for project management and professional development
+                </p>
+              </div>
+              
+              <div className="row justify-content-center">
+                <div className="col-md-4 mb-4">
+                  <div className="text-center p-4" style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '15px', backdropFilter: 'blur(10px)' }}>
+                    <div className="mb-3">
+                      <i className="fas fa-graduation-cap fa-3x text-white"></i>
+                    </div>
+                    <h5 className="text-white">Professional Courses</h5>
+                    <p className="text-white-50 small">Access high-quality courses designed for project managers and team leaders</p>
+                  </div>
+                </div>
+                
+                <div className="col-md-4 mb-4">
+                  <div className="text-center p-4" style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '15px', backdropFilter: 'blur(10px)' }}>
+                    <div className="mb-3">
+                      <i className="fas fa-users fa-3x text-white"></i>
+                    </div>
+                    <h5 className="text-white">Team Learning</h5>
+                    <p className="text-white-50 small">Collaborate with your team and track learning progress together</p>
+                  </div>
+                </div>
+                
+                <div className="col-md-4 mb-4">
+                  <div className="text-center p-4" style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '15px', backdropFilter: 'blur(10px)' }}>
+                    <div className="mb-3">
+                      <i className="fas fa-certificate fa-3x text-white"></i>
+                    </div>
+                    <h5 className="text-white">Certifications</h5>
+                    <p className="text-white-50 small">Earn certificates upon course completion to showcase your skills</p>
+                  </div>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        ) : featuredCourses.length > 0 && (
           <Row className="mb-5">
             <Col>
               <div className="text-center mb-5">
@@ -335,13 +385,15 @@ const Home = () => {
           </Row>
         )}
 
-        <Row className="mt-5">
-          <Col className="text-center">
-            <Button as={Link} to="/courses" variant="light" size="lg" className="shadow">
-              View All Courses
-            </Button>
-          </Col>
-        </Row>
+        {user && (
+          <Row className="mt-5">
+            <Col className="text-center">
+              <Button as={Link} to="/courses" variant="light" size="lg" className="shadow">
+                View All Courses
+              </Button>
+            </Col>
+          </Row>
+        )}
       </Container>
     </div>
   );

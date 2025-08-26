@@ -5,8 +5,8 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('All REACT_APP_ variables:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
 
 const config = {
-  // API Base URL - with proper fallback for production
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'https://lms-backend-dusky-nine.vercel.app',
+  // API Base URL - with proper fallback for local development
+  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   
   // Supabase Configuration (if needed)
   SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL,
@@ -24,6 +24,7 @@ const config = {
       ME: '/api/auth/me'
     },
     COURSES: '/api/courses',
+    USER_COURSES: '/api/courses/user-courses',
     USERS: '/api/users',
     ENROLLMENTS: '/api/enrollments',
     ENROLLMENTS_PENDING_APPROVAL: '/api/enrollments/pending-approval',
@@ -72,7 +73,23 @@ export const buildApiUrl = (endpoint) => {
 
 // Helper function to get endpoint
 export const getEndpoint = (path) => {
-  return path;
+  console.log('🔍 getEndpoint called with:', path);
+  
+  // Split nested paths (like 'ENROLLMENTS_MY_ENROLLMENTS')
+  const pathParts = path.split('_');
+  let current = config.ENDPOINTS;
+  
+  for (const part of pathParts) {
+    if (current && current[part]) {
+      current = current[part];
+    } else {
+      console.log('❌ getEndpoint - Path not found:', path);
+      return path; // Return as-is if not found
+    }
+  }
+  
+  console.log('✅ getEndpoint result:', current);
+  return current;
 };
 
 export default config; 

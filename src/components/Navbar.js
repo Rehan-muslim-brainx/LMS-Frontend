@@ -97,7 +97,7 @@ const NavigationBar = () => {
                 Home
               </Nav.Link>
             )}
-            {user?.role !== 'admin' && user?.role !== 'general' && (
+            {user && user?.role !== 'admin' && user?.role !== 'general' && (
               <Nav.Link 
                 as={Link} 
                 to="/courses" 

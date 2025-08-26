@@ -31,11 +31,14 @@ const Admin = () => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [filteredApprovals, setFilteredApprovals] = useState([]);
   const [filteredCompletions, setFilteredCompletions] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
   
   // Filter states
   const [approvalDepartmentFilter, setApprovalDepartmentFilter] = useState('');
   const [completionDepartmentFilter, setCompletionDepartmentFilter] = useState('');
   const [completionUserFilter, setCompletionUserFilter] = useState('');
+  const [courseDepartmentFilter, setCourseDepartmentFilter] = useState('');
+  const [courseStatusFilter, setCourseStatusFilter] = useState('all'); // 'all', 'active', 'deactivated'
 
   // Course form state
   const [courseForm, setCourseForm] = useState({
@@ -96,8 +99,21 @@ const Admin = () => {
     }
   }, [completedEnrollments, completionDepartmentFilter, completionUserFilter]);
 
+  // Course filtering effects
+  useEffect(() => {
+    if (courses.length > 0) {
+      setFilteredCourses(courses);
+    }
+  }, [courses]);
+
+  useEffect(() => {
+    if (courses.length > 0) {
+      filterCourses();
+    }
+  }, [courses, courseDepartmentFilter, courseStatusFilter]);
+
   // Check if user is admin
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'general')) {
     return (
       <div style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
@@ -115,7 +131,7 @@ const Admin = () => {
             <Card.Body className="p-5">
               <h2 className="text-danger mb-4">🚫 Access Denied</h2>
               <p className="text-muted">You don't have permission to access the admin panel.</p>
-              <p className="text-muted">Only administrators can view this page.</p>
+              <p className="text-muted">Only administrators and general role users can view this page.</p>
             </Card.Body>
           </Card>
         </Container>
@@ -126,12 +142,33 @@ const Admin = () => {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('🔍 Admin - Starting fetchData...');
+      console.log('🔍 Admin - User:', user);
+      console.log('🔍 Admin - Token exists:', !!token);
+      console.log('🔍 Admin - Token value:', token ? token.substring(0, 20) + '...' : 'null');
       
-      // Fetch courses
-      const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES')), {
+      // Debug API URL construction
+      const coursesEndpoint = getEndpoint('COURSES');
+      console.log('🔍 Admin - COURSES endpoint:', coursesEndpoint);
+      const coursesUrlWithParam = coursesEndpoint + '?includeInactive=true';
+      console.log('🔍 Admin - URL with param:', coursesUrlWithParam);
+      const fullApiUrl = buildApiUrl(coursesUrlWithParam);
+      console.log('🔍 Admin - Full API URL:', fullApiUrl);
+      
+      // Fetch courses (including inactive ones for admin)
+      console.log('🚀 Admin - Making API call to:', fullApiUrl);
+      
+      const coursesResponse = await axios.get(fullApiUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('✅ Admin - Courses response received');
+      console.log('📊 Admin - Response status:', coursesResponse.status);
+      console.log('📊 Admin - Response data:', coursesResponse.data);
+      console.log('📊 Admin - Number of courses:', coursesResponse.data?.length || 0);
+      
       setCourses(coursesResponse.data);
+      console.log('✅ Admin - Courses state updated');
 
       // Fetch users
       const usersResponse = await axios.get(buildApiUrl(getEndpoint('USERS')), {
@@ -156,8 +193,17 @@ const Admin = () => {
       setDepartments(departmentsResponse.data);
 
       setLoading(false);
+      console.log('✅ Admin - All data fetched successfully');
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('❌ Admin - Error fetching data:', error);
+      console.error('❌ Admin - Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
       setLoading(false);
     }
   };
@@ -198,6 +244,24 @@ const Admin = () => {
     setFilteredCompletions(filtered);
   };
 
+  const filterCourses = (department = courseDepartmentFilter, status = courseStatusFilter) => {
+    let filtered = courses;
+    
+    // Filter by department
+    if (department) {
+      filtered = filtered.filter(course => course.department === department);
+    }
+    
+    // Filter by status
+    if (status === 'active') {
+      filtered = filtered.filter(course => course.is_active === true);
+    } else if (status === 'deactivated') {
+      filtered = filtered.filter(course => course.is_active === false);
+    }
+    // 'all' shows both active and deactivated
+    
+    setFilteredCourses(filtered);
+  };
 
   const showAlert = (message, type) => {
     setAlert({ show: true, message, type });
@@ -352,6 +416,36 @@ const Admin = () => {
       } catch (error) {
         console.error('Error deleting course:', error);
         showAlert('Error deleting course', 'danger');
+      }
+    }
+  };
+
+  const handleActivateCourse = async (courseId) => {
+    if (window.confirm('Are you sure you want to activate this course? It will be visible to users.')) {
+      try {
+        await axios.patch(buildApiUrl(`/api/courses/${courseId}/activate`), {}, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        showAlert('Course activated successfully!', 'success');
+        fetchData();
+      } catch (error) {
+        console.error('Error activating course:', error);
+        showAlert('Error activating course', 'danger');
+      }
+    }
+  };
+
+  const handleDeactivateCourse = async (courseId) => {
+    if (window.confirm('Are you sure you want to deactivate this course? It will be hidden from users.')) {
+      try {
+        await axios.patch(buildApiUrl(`/api/courses/${courseId}/deactivate`), {}, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        showAlert('Course deactivated successfully!', 'success');
+        fetchData();
+      } catch (error) {
+        console.error('Error deactivating course:', error);
+        showAlert('Error deactivating course', 'danger');
       }
     }
   };
@@ -990,19 +1084,42 @@ const Admin = () => {
           }}>
             <Card.Body>
               <Row className="mb-3">
-                <Col>
-                  <h5>All Courses ({courses.length})</h5>
+                <Col md={6}>
+                  <h5>All Courses ({filteredCourses.length} of {courses.length})</h5>
+                </Col>
+                <Col md={3}>
+                  <Form.Select
+                    value={courseDepartmentFilter}
+                    onChange={(e) => setCourseDepartmentFilter(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  >
+                    <option value="">All Departments</option>
+                    {departments.map(dept => (
+                      <option key={dept.name} value={dept.name}>{dept.name}</option>
+                    ))}
+                  </Form.Select>
+                </Col>
+                <Col md={3}>
+                  <Form.Select
+                    value={courseStatusFilter}
+                    onChange={(e) => setCourseStatusFilter(e.target.value)}
+                    style={{ borderRadius: '10px' }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">🟢 Active</option>
+                    <option value="deactivated">⚫ Deactivated</option>
+                  </Form.Select>
                 </Col>
               </Row>
 
-              {courses.length === 0 ? (
+              {filteredCourses.length === 0 ? (
                 <div className="text-center py-5">
                   <h4>No courses yet</h4>
                   <p className="text-muted">Create your first course to get started</p>
                 </div>
               ) : (
                 <Row>
-                  {courses.map(course => (
+                  {filteredCourses.map(course => (
                     <Col key={course.id} lg={4} md={6} className="mb-4">
                       <Card className="h-100 shadow border-0" style={{ 
                         backgroundColor: 'rgba(255,255,255,0.9)', 
@@ -1020,7 +1137,13 @@ const Admin = () => {
                           <div className="mb-2">
                             <Badge bg="success" className="me-2" style={{ borderRadius: '20px' }}>{course.category}</Badge>
                             <Badge bg="primary" className="me-2" style={{ borderRadius: '20px' }}>{course.department}</Badge>
-                            <Badge bg="info" style={{ borderRadius: '20px' }}>Free</Badge>
+                            <Badge bg="info" className="me-2" style={{ borderRadius: '20px' }}>Free</Badge>
+                            <Badge 
+                              bg={course.is_active ? 'success' : 'secondary'} 
+                              style={{ borderRadius: '20px' }}
+                            >
+                              {course.is_active ? '🟢 Active' : '⚫ Inactive'}
+                            </Badge>
                           </div>
                           <Card.Title className="h6 mb-2 fw-bold">{course.title}</Card.Title>
                           <Card.Text className="text-muted small mb-3">
@@ -1036,6 +1159,25 @@ const Admin = () => {
                             <div className="d-flex gap-2">
                               <Button variant="outline-success" size="sm" onClick={() => handleEditCourse(course)} style={{ borderRadius: '25px' }}>✏️ Edit</Button>
                               <Button variant="outline-danger" size="sm" onClick={() => handleDeleteCourse(course.id)} style={{ borderRadius: '25px' }}>🗑️ Delete</Button>
+                              {course.is_active ? (
+                                <Button 
+                                  variant="outline-warning" 
+                                  size="sm" 
+                                  onClick={() => handleDeactivateCourse(course.id)} 
+                                  style={{ borderRadius: '25px' }}
+                                >
+                                  🚫 Deactivate
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="outline-success" 
+                                  size="sm" 
+                                  onClick={() => handleActivateCourse(course.id)} 
+                                  style={{ borderRadius: '25px' }}
+                                >
+                                  ✅ Activate
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </Card.Body>
@@ -1097,7 +1239,7 @@ const Admin = () => {
                         </Badge>
                       </td>
                       <td>
-                        <Badge bg={user.role === 'admin' ? 'warning' : 'success'}>
+                        <Badge bg={(user.role === 'admin' || user.role === 'general') ? 'warning' : 'success'}>
                           {user.role}
                         </Badge>
                       </td>
@@ -1149,7 +1291,7 @@ const Admin = () => {
                             </Button>
                           </div>
                         )}
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'general') && (
                           <span className="text-muted">Admin</span>
                         )}
                       </td>

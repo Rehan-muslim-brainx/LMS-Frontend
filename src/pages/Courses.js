@@ -18,21 +18,31 @@ const Courses = () => {
 
   const categories = ['All', 'Project Management', 'Leadership', 'Technical', 'Soft Skills'];
 
+  // Redirect non-logged users to home
   useEffect(() => {
+    if (!user) {
+      window.location.href = '/';
+      return;
+    }
     fetchCourses();
   }, [user]); // Add user as dependency to refresh when user changes
 
   const fetchCourses = async () => {
     try {
+      console.log('🔍 Fetching courses...');
       const response = await axios.get(buildApiUrl(getEndpoint('COURSES')));
+      console.log('✅ Courses fetched successfully:', response.data.length, 'courses');
+      console.log('🔍 Courses data:', response.data.map(c => ({id: c.id, title: c.title, department: c.department, is_active: c.is_active})));
       
-      // Filter courses by user's department and include "general" department
-      let filteredCourses = response.data;
-      if (user && user.department) {
-        console.log('User department:', user.department);
-        console.log('Available courses:', response.data.map(c => ({id: c.id, title: c.title, department: c.department})));
+      // Filter courses: only active courses + user's department + general
+      let filteredCourses = response.data.filter(course => {
+        // Only show active courses for regular users
+        if (!course.is_active) {
+          return false;
+        }
         
-        filteredCourses = response.data.filter(course => {
+        // Filter by user's department and include "general" department
+        if (user && user.department) {
           const courseDepLower = (course.department || '').toLowerCase();
           const userDepLower = (user.department || '').toLowerCase();
           
@@ -40,30 +50,47 @@ const Courses = () => {
           const isGeneral = courseDepLower === 'general';
           
           return isUserDepartment || isGeneral;
-        });
+        }
         
-        console.log('Filtered courses for user:', filteredCourses.map(c => ({id: c.id, title: c.title, department: c.department})));
-      }
+        return true;
+      });
       
+      console.log('🔍 Filtered courses for user:', filteredCourses.map(c => ({id: c.id, title: c.title, department: c.department})));
       setCourses(filteredCourses);
       
-      // Check enrollment status for each course
-      const statusMap = {};
-      for (const course of filteredCourses) {
-        try {
-          const statusResponse = await axios.get(buildApiUrl(`/api/enrollments/check/${course.id}`), {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      // Try to fetch enrollment statuses in bulk instead of individual calls
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_MY_ENROLLMENTS')), {
+            headers: { Authorization: `Bearer ${token}` }
           });
-          statusMap[course.id] = statusResponse.data;
-        } catch (error) {
-          console.error(`Error checking enrollment for course ${course.id}:`, error);
-          statusMap[course.id] = null;
+          
+          // Create a map of course_id to enrollment status
+          const statusMap = {};
+          enrollmentsResponse.data.forEach(enrollment => {
+            statusMap[enrollment.course_id] = {
+              isEnrolled: true,
+              status: enrollment.status,
+              enrollment_id: enrollment.id
+            };
+          });
+          
+          setEnrollmentStatuses(statusMap);
+          console.log('✅ Enrollment statuses fetched successfully');
         }
+      } catch (enrollmentError) {
+        console.warn('⚠️ Could not fetch enrollment statuses, continuing without them:', enrollmentError);
+        // Don't fail the entire course fetch if enrollment status fails
+        setEnrollmentStatuses({});
       }
-      setEnrollmentStatuses(statusMap);
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      showAlert('Error loading courses', 'danger');
+      console.error('❌ Error fetching courses:', error);
+      if (error.response) {
+        console.error('❌ Response status:', error.response.status);
+        console.error('❌ Response data:', error.response.data);
+      }
+      showAlert('Error loading courses. Please try again.', 'danger');
     } finally {
       setLoading(false);
     }
