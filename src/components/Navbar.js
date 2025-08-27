@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
-import { useLogo } from '../contexts/LogoContext';
 import { FaUser, FaSignOutAlt, FaCog, FaHome, FaBook, FaChartBar, FaCrown } from 'react-icons/fa';
 
 const NavigationBar = () => {
   const { user, logout } = useAuth();
-  const { logo, loading: logoLoading } = useLogo();
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
 
@@ -38,18 +36,20 @@ const NavigationBar = () => {
     >
       <Container>
         <Navbar.Brand as={Link} to="/" className="navbar-brand d-flex align-items-center" style={{ color: 'white', fontWeight: 'bold', fontSize: '1.5rem' }}>
-          {!logoLoading && logo && (
-            <img 
-              src={logo} 
-              alt="BRAINX Logo" 
-              style={{
-                width: '35px',
-                height: '35px',
-                marginRight: '12px',
-                borderRadius: '8px'
-              }}
-            />
-          )}
+          <img 
+            src="/brainx-logo.svg" 
+            alt="BRAINX Logo" 
+            style={{
+              width: '45px',
+              height: '45px',
+              marginRight: '15px',
+              borderRadius: '6px',
+              border: '2px solid rgba(255,255,255,0.2)',
+              backgroundColor: 'white',
+              padding: '2px',
+              filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.2))'
+            }}
+          />
           <span style={{ 
             color: 'white',
             fontWeight: '700',

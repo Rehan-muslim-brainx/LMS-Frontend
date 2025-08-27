@@ -15,6 +15,8 @@ const Courses = () => {
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [enrollmentStatuses, setEnrollmentStatuses] = useState({});
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = useState(null);
 
   const categories = ['All', 'Project Management', 'Leadership', 'Technical', 'Soft Skills'];
 
@@ -151,6 +153,31 @@ const Courses = () => {
   };
 
   const handleRequestCompletion = async (courseId) => {
+    // Find the course to get quiz link
+    const course = courses.find(c => c.id === courseId);
+    if (!course) {
+      showAlert('Course not found', 'danger');
+      return;
+    }
+
+    // Set selected course for quiz modal
+    setSelectedCourseForQuiz(course);
+    setShowQuizModal(true);
+  };
+
+  const handleQuizResponse = (takeQuiz) => {
+    if (takeQuiz) {
+      // Open quiz link in new tab
+      window.open(selectedCourseForQuiz.quiz_link, '_blank');
+    }
+    
+    // Close modal and proceed with completion request
+    setShowQuizModal(false);
+    proceedWithCompletionRequest(selectedCourseForQuiz.id);
+    setSelectedCourseForQuiz(null);
+  };
+
+  const proceedWithCompletionRequest = async (courseId) => {
     try {
       const token = localStorage.getItem('token');
       
@@ -454,6 +481,38 @@ const Courses = () => {
               </div>
             )}
           </Modal.Body>
+        </Modal>
+
+        {/* Quiz Modal */}
+        <Modal show={showQuizModal} onHide={() => setShowQuizModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>📝 Course Quiz Required</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedCourseForQuiz && (
+              <div className="text-center">
+                <h5 className="mb-3">{selectedCourseForQuiz.title}</h5>
+                <p className="mb-4">
+                  Before completing this course, you need to attempt the quiz. 
+                  Would you like to take the quiz now?
+                </p>
+                <div className="alert alert-info">
+                  <small>
+                    <strong>Note:</strong> The quiz will open in a new tab. You can proceed with 
+                    completion request whether you take the quiz now or later.
+                  </small>
+                </div>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => handleQuizResponse(false)}>
+              ❌ Skip Quiz for Now
+            </Button>
+            <Button variant="primary" onClick={() => handleQuizResponse(true)}>
+              📝 Take Quiz
+            </Button>
+          </Modal.Footer>
         </Modal>
       </Container>
     </div>

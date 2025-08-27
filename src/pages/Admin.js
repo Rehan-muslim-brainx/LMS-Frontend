@@ -50,7 +50,8 @@ const Admin = () => {
     duration: 0,
     image_url: '',
     document_url: '',
-    external_link: ''
+    external_link: '',
+    quiz_link: ''
   });
 
   // Department form state
@@ -327,6 +328,12 @@ const Admin = () => {
       return;
     }
     
+    // Validate quiz link is provided
+    if (!courseForm.quiz_link || courseForm.quiz_link.trim() === '') {
+      showAlert('Quiz link is required for all courses', 'danger');
+      return;
+    }
+    
     try {
       let documentUrl = courseForm.document_url;
       let imageUrl = courseForm.image_url;
@@ -376,7 +383,8 @@ const Admin = () => {
         duration: 0,
         image_url: '',
         document_url: '',
-        external_link: ''
+        external_link: '',
+        quiz_link: ''
       });
       setSelectedFile(null);
       setSelectedImageFile(null);
@@ -400,7 +408,8 @@ const Admin = () => {
       duration: course.duration || 0,
       image_url: course.image_url || '',
       document_url: course.document_url || '',
-      external_link: course.external_link || ''
+      external_link: course.external_link || '',
+      quiz_link: course.quiz_link || ''
     });
     setShowCourseModal(true);
   };
@@ -462,7 +471,8 @@ const Admin = () => {
       duration: 0,
       image_url: '',
       document_url: '',
-      external_link: ''
+      external_link: '',
+      quiz_link: ''
     });
     setSelectedFile(null);
     setSelectedImageFile(null);
@@ -1690,6 +1700,20 @@ const Admin = () => {
               />
               <Form.Text className="text-muted">
                 Provide either a document file or an external link (at least one is required)
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Quiz Link *</Form.Label>
+              <Form.Control
+                type="url"
+                value={courseForm.quiz_link}
+                onChange={(e) => setCourseForm({...courseForm, quiz_link: e.target.value})}
+                placeholder="https://forms.google.com/quiz-link"
+                required
+              />
+              <Form.Text className="text-muted">
+                Required: Students will be prompted to take this quiz before course completion
               </Form.Text>
             </Form.Group>
           </Form>
