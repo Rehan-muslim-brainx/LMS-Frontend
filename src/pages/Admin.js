@@ -66,31 +66,42 @@ const Admin = () => {
 
   // Helper function to get the appropriate image URL for a course
   const getCourseImageUrl = (course) => {
+    console.log('🔍 getCourseImageUrl called for course:', course.id, course.title);
+    console.log('🔍 Course image_url:', course.image_url);
+    console.log('🔍 Course image_url type:', typeof course.image_url);
+    
     // If course has an uploaded image (starts with /uploads/), use it
     if (course.image_url && course.image_url.startsWith('/uploads/')) {
+      console.log('🔍 Uploaded image detected:', course.image_url);
       // Check if it's actually an image file - include .jpeg extension
       const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
       if (isImageFile) {
         // Construct full URL for uploaded images
         const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${course.image_url}`;
+        console.log('✅ Using uploaded image, full URL:', fullUrl);
         return fullUrl;
       } else {
+        console.log('⚠️ File in image_url is not an image, using default');
         return defaultCourseImage;
       }
     }
     
     // If course has an external image URL, use it
     if (course.image_url && course.image_url.startsWith('http')) {
+      console.log('🔍 External image detected:', course.image_url);
       // Check if it's actually an image file - include .jpeg extension
       const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
       if (isImageFile) {
+        console.log('✅ Using external image:', course.image_url);
         return course.image_url;
       } else {
+        console.log('⚠️ External URL is not an image, using default');
         return defaultCourseImage;
       }
     }
     
     // If no image was uploaded (image_url is null, empty, or undefined), use default
+    console.log('⚠️ No image uploaded, using default image');
     return defaultCourseImage;
   };
 
@@ -178,6 +189,19 @@ const Admin = () => {
       const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES') + '?includeInactive=true'), {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('✅ Admin - Courses response received');
+      console.log('📊 Admin - Response status:', coursesResponse.status);
+      console.log('📊 Admin - Response data:', coursesResponse.data);
+      console.log('📊 Admin - Number of courses:', coursesResponse.data?.length || 0);
+      
+      // Debug: Log image URLs for each course
+      if (coursesResponse.data && coursesResponse.data.length > 0) {
+        console.log('🔍 Course image URLs:');
+        coursesResponse.data.forEach(course => {
+          console.log(`  Course ${course.id} (${course.title}): image_url = ${course.image_url}`);
+        });
+      }
       
       setCourses(coursesResponse.data);
 
@@ -308,7 +332,14 @@ const Admin = () => {
   };
 
   const uploadImageFile = async () => {
-    if (!selectedImageFile) return null;
+    if (!selectedImageFile) {
+      console.log('❌ No image file selected');
+      return null;
+    }
+
+    console.log('🔍 Starting image upload for file:', selectedImageFile.name);
+    console.log('🔍 File type:', selectedImageFile.type);
+    console.log('🔍 File size:', selectedImageFile.size);
 
     const formData = new FormData();
     formData.append('file', selectedImageFile);
@@ -321,9 +352,12 @@ const Admin = () => {
         }
       });
       
+      console.log('✅ Image upload successful:', response.data);
+      console.log('✅ Image URL returned:', response.data.url);
+      
       return response.data.url; // Return full URL from response
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('❌ Error uploading image:', error);
       showAlert('Error uploading image', 'danger');
       return null;
     }
@@ -354,13 +388,17 @@ const Admin = () => {
       }
 
       if (selectedImageFile) {
+        // Upload new image and use it
         imageUrl = await uploadImageFile();
         if (!imageUrl) return;
+        console.log('✅ New image uploaded successfully:', imageUrl);
       } else {
         // No new image selected, keep existing image only if it's actually an image file
         if (imageUrl) {
           const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(imageUrl);
+          console.log('🔍 Existing imageUrl validation - isImageFile:', isImageFile, 'imageUrl:', imageUrl);
           if (!isImageFile) {
+            console.log('⚠️ Existing image_url is not an image file, clearing it');
             imageUrl = null; // Clear non-image files
           }
         }
@@ -372,6 +410,9 @@ const Admin = () => {
         document_url: documentUrl || courseForm.document_url,
         image_url: imageUrl
       };
+
+      console.log('🔍 Final course data to save:', courseData);
+      console.log('🔍 Final image_url value:', courseData.image_url);
 
       if (selectedCourse) {
         await axios.put(buildApiUrl(`/api/courses/${selectedCourse.id}`), courseData, {
@@ -487,6 +528,30 @@ const Admin = () => {
       document_url: '',
       external_link: '',
       quiz_link: ''
+    });
+    setSelectedFile(null);
+    setSelectedImageFile(null);
+  };
+
+  // Helper function to remove existing image
+  const handleRemoveImage = () => {
+    setCourseForm({...courseForm, image_url: ''});
+    setSelectedImageFile(null);
+  };
+
+  // Helper function to remove existing document
+  const handleRemoveDocument = () => {
+    setCourseForm({...courseForm, document_url: ''});
+    setSelectedFile(null);
+  };
+
+  // Helper function to clear all resources
+  const handleClearAllResources = () => {
+    setCourseForm({
+      ...courseForm,
+      image_url: '',
+      document_url: '',
+      external_link: ''
     });
     setSelectedFile(null);
     setSelectedImageFile(null);
@@ -1151,7 +1216,11 @@ const Admin = () => {
                           src={getCourseImageUrl(course)}
                           style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
                           onError={(e) => {
+                            console.log('❌ Image failed to load for course:', course.id, 'URL:', e.target.src);
                             e.target.src = defaultCourseImage;
+                          }}
+                          onLoad={(e) => {
+                            console.log('✅ Image loaded successfully for course:', course.id, 'URL:', e.target.src);
                           }}
                         />
                         <Card.Body className="d-flex flex-column p-3">
@@ -1639,6 +1708,42 @@ const Admin = () => {
               />
             </Form.Group>
 
+            {/* Resource Summary */}
+            {(courseForm.image_url || courseForm.document_url || courseForm.external_link) && (
+              <div className="mb-3 p-3 bg-info bg-opacity-10 rounded border">
+                <h6 className="text-info mb-2">📋 Current Resources</h6>
+                <div className="row">
+                  {courseForm.image_url && (
+                    <div className="col-md-4 mb-2">
+                      <small className="text-muted d-block">🖼️ Image</small>
+                      <small className="text-success">✓ Attached</small>
+                    </div>
+                  )}
+                  {courseForm.document_url && (
+                    <div className="col-md-4 mb-2">
+                      <small className="text-muted d-block">📄 Document</small>
+                      <small className="text-success">✓ Attached</small>
+                    </div>
+                  )}
+                  {courseForm.external_link && (
+                    <div className="col-md-4 mb-2">
+                      <small className="text-muted d-block">🔗 External Link</small>
+                      <small className="text-success">✓ Attached</small>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Resource Requirement Warning */}
+            {!courseForm.image_url && !courseForm.document_url && !courseForm.external_link && !selectedFile && !selectedImageFile && (
+              <div className="mb-3 p-3 bg-warning bg-opacity-10 rounded border">
+                <small className="text-warning">
+                  ⚠️ At least one resource is required: Upload a document/image or provide an external link
+                </small>
+              </div>
+            )}
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -1675,16 +1780,46 @@ const Admin = () => {
               )}
               {courseForm.image_url && !selectedImageFile && (
                 <div className="mt-2">
-                  <small className="text-muted">Current image:</small>
-                  <img 
-                    src={courseForm.image_url} 
-                    alt="Current" 
-                    style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'cover' }}
-                    className="border rounded d-block mt-1"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
+                  <div className="d-flex align-items-center mb-2">
+                    <small className="text-muted me-2">Current image:</small>
+                    <Button 
+                      variant="outline-danger" 
+                      size="sm" 
+                      onClick={handleRemoveImage}
+                      title="Remove current image"
+                    >
+                      🗑️ Remove
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-light rounded border">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div>
+                        <small className="text-muted d-block">
+                          🖼️ {courseForm.image_url.split('/').pop() || courseForm.image_url}
+                        </small>
+                        <small className="text-muted">
+                          {courseForm.image_url.startsWith('http') ? 'External image' : 'Uploaded image'}
+                        </small>
+                      </div>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        onClick={() => window.open(courseForm.image_url, '_blank')}
+                        title="View image in full size"
+                      >
+                        👁️ View
+                      </Button>
+                    </div>
+                    <img 
+                      src={courseForm.image_url} 
+                      alt="Current" 
+                      style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'cover' }}
+                      className="border rounded d-block"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </Form.Group>
@@ -1699,6 +1834,46 @@ const Admin = () => {
               <Form.Text className="text-muted">
                 {selectedFile ? `Selected: ${selectedFile.name}` : 'Choose a file to upload (PDF, DOC, DOCX, TXT)'}
               </Form.Text>
+              {selectedFile && (
+                <div className="mt-2">
+                  <small className="text-muted">New file selected: {selectedFile.name}</small>
+                </div>
+              )}
+              {courseForm.document_url && !selectedFile && (
+                <div className="mt-2">
+                  <div className="d-flex align-items-center mb-2">
+                    <small className="text-muted me-2">Current document:</small>
+                    <Button 
+                      variant="outline-danger" 
+                      size="sm" 
+                      onClick={handleRemoveDocument}
+                      title="Remove current document"
+                    >
+                      🗑️ Remove
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-light rounded border">
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div>
+                        <small className="text-muted d-block">
+                          📄 {courseForm.document_url.split('/').pop() || courseForm.document_url}
+                        </small>
+                        <small className="text-muted">
+                          {courseForm.document_url.startsWith('http') ? 'External link' : 'Uploaded file'}
+                        </small>
+                      </div>
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        onClick={() => window.open(courseForm.document_url, '_blank')}
+                        title="View/Download document"
+                      >
+                        👁️ View
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-3">
@@ -1712,6 +1887,18 @@ const Admin = () => {
               <Form.Text className="text-muted">
                 Provide either a document file or an external link (at least one is required)
               </Form.Text>
+              {(courseForm.image_url || courseForm.document_url || courseForm.external_link) && (
+                <div className="mt-2">
+                  <Button 
+                    variant="outline-warning" 
+                    size="sm" 
+                    onClick={handleClearAllResources}
+                    title="Clear all resources (image, document, external link)"
+                  >
+                    🗑️ Clear All Resources
+                  </Button>
+                </div>
+              )}
             </Form.Group>
 
             <Form.Group className="mb-3">
