@@ -212,8 +212,13 @@ const Courses = () => {
   };
 
   const handleViewDocument = (course) => {
-    setSelectedDocument(course);
-    setShowDocumentModal(true);
+    // Direct download instead of opening modal
+    const link = document.createElement('a');
+    link.href = course.document_url;
+    link.download = course.title + ' - Document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getDefaultImageUrl = (course) => {
@@ -226,16 +231,25 @@ const Courses = () => {
       'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop'
     ];
     
-    // If course has an uploaded image, use it
+    // If course has an uploaded image (starts with /uploads/), use it
     if (course.image_url && course.image_url.startsWith('/uploads/')) {
-      return course.image_url;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        return course.image_url;
+      }
     }
     
     // If course has an external image URL, use it
     if (course.image_url && course.image_url.startsWith('http')) {
-      return course.image_url;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        return course.image_url;
+      }
     }
     
+    // If no image was uploaded (image_url is null, empty, or undefined), use default
     // Use a different image for each course based on index
     const index = courses.indexOf(course);
     return defaultImages[index % defaultImages.length];
@@ -408,7 +422,7 @@ const Courses = () => {
                           onClick={() => handleViewDocument(course)}
                           style={{ borderRadius: '25px' }}
                         >
-                          📄 View Document
+                          📄 Download Document
                         </Button>
                       )}
                     </div>
@@ -465,17 +479,18 @@ const Courses = () => {
                 <div className="text-center">
                   <Button
                     variant="primary"
-                    href={selectedDocument.document_url}
-                    target="_blank"
+                    onClick={() => {
+                      // Direct download
+                      const link = document.createElement('a');
+                      link.href = selectedDocument.document_url;
+                      link.download = selectedDocument.title + ' - Document';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                     className="me-2"
                   >
                     📄 Download Document
-                  </Button>
-                  <Button
-                    variant="outline-secondary"
-                    onClick={() => window.open(selectedDocument.document_url, '_blank')}
-                  >
-                    👁️ View Online
                   </Button>
                 </div>
               </div>

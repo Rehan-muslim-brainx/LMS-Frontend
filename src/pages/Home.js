@@ -85,14 +85,23 @@ const Home = () => {
     
     // Admin uploaded image takes priority - check if it's a full URL
     if (course.image_url && course.image_url.startsWith('http')) {
-      return course.image_url;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        return course.image_url;
+      }
     }
     
     // If course has an uploaded image path, use it
     if (course.image_url && course.image_url.startsWith('/uploads/')) {
-      return course.image_url;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        return course.image_url;
+      }
     }
     
+    // If no image was uploaded (image_url is null, empty, or undefined), use default
     // Use a different image for each course based on index
     const index = featuredCourses.indexOf(course);
     return defaultImages[index % defaultImages.length];

@@ -64,6 +64,36 @@ const Admin = () => {
   // Default course image
   const defaultCourseImage = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
 
+  // Helper function to get the appropriate image URL for a course
+  const getCourseImageUrl = (course) => {
+    // If course has an uploaded image (starts with /uploads/), use it
+    if (course.image_url && course.image_url.startsWith('/uploads/')) {
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        // Construct full URL for uploaded images
+        const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${course.image_url}`;
+        return fullUrl;
+      } else {
+        return defaultCourseImage;
+      }
+    }
+    
+    // If course has an external image URL, use it
+    if (course.image_url && course.image_url.startsWith('http')) {
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
+      if (isImageFile) {
+        return course.image_url;
+      } else {
+        return defaultCourseImage;
+      }
+    }
+    
+    // If no image was uploaded (image_url is null, empty, or undefined), use default
+    return defaultCourseImage;
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -143,33 +173,13 @@ const Admin = () => {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('🔍 Admin - Starting fetchData...');
-      console.log('🔍 Admin - User:', user);
-      console.log('🔍 Admin - Token exists:', !!token);
-      console.log('🔍 Admin - Token value:', token ? token.substring(0, 20) + '...' : 'null');
-      
-      // Debug API URL construction
-      const coursesEndpoint = getEndpoint('COURSES');
-      console.log('🔍 Admin - COURSES endpoint:', coursesEndpoint);
-      const coursesUrlWithParam = coursesEndpoint + '?includeInactive=true';
-      console.log('🔍 Admin - URL with param:', coursesUrlWithParam);
-      const fullApiUrl = buildApiUrl(coursesUrlWithParam);
-      console.log('🔍 Admin - Full API URL:', fullApiUrl);
       
       // Fetch courses (including inactive ones for admin)
-      console.log('🚀 Admin - Making API call to:', fullApiUrl);
-      
-      const coursesResponse = await axios.get(fullApiUrl, {
+      const coursesResponse = await axios.get(buildApiUrl(getEndpoint('COURSES') + '?includeInactive=true'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('✅ Admin - Courses response received');
-      console.log('📊 Admin - Response status:', coursesResponse.status);
-      console.log('📊 Admin - Response data:', coursesResponse.data);
-      console.log('📊 Admin - Number of courses:', coursesResponse.data?.length || 0);
-      
       setCourses(coursesResponse.data);
-      console.log('✅ Admin - Courses state updated');
 
       // Fetch users
       const usersResponse = await axios.get(buildApiUrl(getEndpoint('USERS')), {
@@ -194,7 +204,6 @@ const Admin = () => {
       setDepartments(departmentsResponse.data);
 
       setLoading(false);
-      console.log('✅ Admin - All data fetched successfully');
     } catch (error) {
       console.error('❌ Admin - Error fetching data:', error);
       console.error('❌ Admin - Error details:', {
@@ -311,6 +320,7 @@ const Admin = () => {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
+      
       return response.data.url; // Return full URL from response
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -346,26 +356,29 @@ const Admin = () => {
       if (selectedImageFile) {
         imageUrl = await uploadImageFile();
         if (!imageUrl) return;
-      } else if (!imageUrl) {
-        // Use default image if no image is uploaded
-        imageUrl = defaultCourseImage;
+      } else {
+        // No new image selected, keep existing image only if it's actually an image file
+        if (imageUrl) {
+          const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(imageUrl);
+          if (!isImageFile) {
+            imageUrl = null; // Clear non-image files
+          }
+        }
       }
 
       const courseData = {
         ...courseForm,
         price: 0, // Always free
         document_url: documentUrl || courseForm.document_url,
-        image_url: imageUrl || courseForm.image_url
+        image_url: imageUrl
       };
 
       if (selectedCourse) {
-        console.log('Updating course:', selectedCourse.id, courseData);
         await axios.put(buildApiUrl(`/api/courses/${selectedCourse.id}`), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         showAlert('Course updated successfully!', 'success');
       } else {
-        console.log('Creating course:', courseData);
         await axios.post(buildApiUrl(getEndpoint('COURSES')), courseData, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
@@ -388,7 +401,8 @@ const Admin = () => {
       });
       setSelectedFile(null);
       setSelectedImageFile(null);
-      fetchData();
+      
+      await fetchData();
     } catch (error) {
       console.error('Error saving course:', error);
       console.error('Error response:', error.response?.data);
@@ -643,9 +657,6 @@ const Admin = () => {
         description: departmentForm.description.trim(),
         roles: filteredRoles
       };
-
-      console.log('Updating department:', selectedDepartmentForEdit.id, departmentData);
-      console.log('Update URL:', buildApiUrl(`/api/departments/${selectedDepartmentForEdit.id}`));
 
       await axios.put(buildApiUrl(`/api/departments/${selectedDepartmentForEdit.id}`), departmentData, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1137,7 +1148,7 @@ const Admin = () => {
                       }}>
                         <Card.Img 
                           variant="top" 
-                          src={course.image_url || defaultCourseImage}
+                          src={getCourseImageUrl(course)}
                           style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
                           onError={(e) => {
                             e.target.src = defaultCourseImage;

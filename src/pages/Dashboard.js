@@ -21,30 +21,51 @@ const Dashboard = () => {
 
   // Helper function to fix image URLs
   const getImageUrl = (imageUrl) => {
-    console.log('🔍 getImageUrl called with:', imageUrl);
-    console.log('🔍 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    // Use professional project management related images for defaults
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop'
+    ];
     
     if (!imageUrl) {
-      console.log('🔍 No image URL, using default');
-      return 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+      // Use a random default image
+      const randomIndex = Math.floor(Math.random() * defaultImages.length);
+      return defaultImages[randomIndex];
     }
     
-    // If it's already a full URL, return as is
+    // If it's already a full URL, return as is (but validate it's an image)
     if (imageUrl.startsWith('http')) {
-      console.log('🔍 Full URL detected, returning as is');
-      return imageUrl;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(imageUrl);
+      if (isImageFile) {
+        return imageUrl;
+      } else {
+        // Use a random default image
+        const randomIndex = Math.floor(Math.random() * defaultImages.length);
+        return defaultImages[randomIndex];
+      }
     }
     
-    // If it's a relative path, construct full URL
+    // If it's a relative path (uploaded file), construct full URL
     if (imageUrl.startsWith('/uploads/')) {
-      const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${imageUrl}`;
-      console.log('🔍 Constructed full URL:', fullUrl);
-      return fullUrl;
+      // Check if it's actually an image file - include .jpeg extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(imageUrl);
+      if (isImageFile) {
+        const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${imageUrl}`;
+        return fullUrl;
+      } else {
+        // Use a random default image
+        const randomIndex = Math.floor(Math.random() * defaultImages.length);
+        return defaultImages[randomIndex];
+      }
     }
     
-    // Default fallback
-    console.log('🔍 Using default fallback image');
-    return 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
+    // If no image was uploaded (image_url is null, empty, or undefined), use random default
+    const randomIndex = Math.floor(Math.random() * defaultImages.length);
+    return defaultImages[randomIndex];
   };
 
   useEffect(() => {
@@ -60,8 +81,6 @@ const Dashboard = () => {
         const enrollmentsResponse = await axios.get(buildApiUrl(getEndpoint('ENROLLMENTS_MY_ENROLLMENTS')), {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        console.log('✅ Dashboard - Enrollments fetched:', enrollmentsResponse.data);
-        console.log('✅ Dashboard - User:', user);
         
         // Filter enrollments: hide deactivated courses unless completed
         const filteredEnrollments = enrollmentsResponse.data.filter(enrollment => {
@@ -81,7 +100,6 @@ const Dashboard = () => {
           return true;
         });
         
-        console.log('🔍 Dashboard - Filtered enrollments:', filteredEnrollments.length, 'of', enrollmentsResponse.data.length);
         setEnrollments(filteredEnrollments);
 
         // Fetch all courses for project managers and admins
@@ -89,23 +107,16 @@ const Dashboard = () => {
         if (allowedRoles.includes(user.role)) {
           const token = localStorage.getItem('token');
           const coursesResponse = await axios.get(buildApiUrl(getEndpoint('USER_COURSES')), {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
           });
           setCourses(coursesResponse.data);
         }
-
-        // Debug: Log enrollment data
-        console.log('🔍 Dashboard - All enrollments:', enrollmentsResponse.data);
-        console.log('🔍 Dashboard - User ID:', user.id);
-        console.log('🔍 Dashboard - Enrollment statuses:', enrollmentsResponse.data.map(e => ({id: e.id, status: e.status, course_id: e.course_id})));
         
         // Calculate stats
         const totalCourses = enrollmentsResponse.data.length;
         const completedCourses = enrollmentsResponse.data.filter(e => e.status === 'completed').length;
         const inProgressCourses = enrollmentsResponse.data.filter(e => e.status === 'active').length;
         const pendingApproval = enrollmentsResponse.data.filter(e => e.status === 'completion_requested').length;
-
-        console.log('🔍 Dashboard - Stats calculated:', {totalCourses, completedCourses, inProgressCourses, pendingApproval});
 
         setStats({
           totalCourses,
@@ -301,7 +312,6 @@ const Dashboard = () => {
                 ) : (
             <Row>
               {enrollments.map((enrollment) => {
-                console.log('🔍 Rendering enrollment:', enrollment.id, 'Course image:', enrollment.course?.image_url);
                 return (
                 <Col key={enrollment.id} lg={4} md={6} className="mb-4">
                   <Card className="course-card h-100">
@@ -310,7 +320,6 @@ const Dashboard = () => {
                       src={getImageUrl(enrollment.course?.image_url)} 
                       className="course-image"
                       onError={(e) => {
-                        console.log('❌ Image failed to load for enrollment:', enrollment.id);
                         e.target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
                       }}
                     />
@@ -383,7 +392,6 @@ const Dashboard = () => {
                 <h3 className="mb-4">All Available Courses</h3>
                 <Row>
                   {courses.map(course => {
-                    console.log('🔍 Rendering course:', course.id, 'Course image:', course.image_url);
                     return (
                       <Col key={course.id} lg={4} md={6} className="mb-4">
                         <Card className="h-100 shadow border-0" style={{ 
@@ -395,7 +403,6 @@ const Dashboard = () => {
                             src={getImageUrl(course.image_url)} 
                             style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
                             onError={(e) => {
-                              console.log('❌ Image failed to load for course:', course.id);
                               e.target.src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=250&fit=crop';
                             }}
                           />

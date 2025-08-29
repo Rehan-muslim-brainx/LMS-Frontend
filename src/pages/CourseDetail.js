@@ -127,7 +127,9 @@ const CourseDetail = () => {
         <Col lg={8}>
           <div className="mb-4">
             <img 
-              src={course.image_url || 'https://via.placeholder.com/800x400?text=Course+Image'} 
+              src={course.image_url && course.image_url.startsWith('/uploads/') ? course.image_url : 
+     course.image_url && course.image_url.startsWith('http') ? course.image_url : 
+     'https://via.placeholder.com/800x400?text=Course+Image'} 
               alt={course.title}
               className="img-fluid rounded mb-3"
               style={{ width: '100%', height: '300px', objectFit: 'cover' }}
