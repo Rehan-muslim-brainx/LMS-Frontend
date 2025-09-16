@@ -66,42 +66,39 @@ const Admin = () => {
 
   // Helper function to get the appropriate image URL for a course
   const getCourseImageUrl = (course) => {
-    console.log('🔍 getCourseImageUrl called for course:', course.id, course.title);
-    console.log('🔍 Course image_url:', course.image_url);
-    console.log('🔍 Course image_url type:', typeof course.image_url);
+    if (!course.image_url) {
+      return defaultCourseImage;
+    }
     
     // If course has an uploaded image (starts with /uploads/), use it
-    if (course.image_url && course.image_url.startsWith('/uploads/')) {
-      console.log('🔍 Uploaded image detected:', course.image_url);
-      // Check if it's actually an image file - include .jpeg extension
+    if (course.image_url.startsWith('/uploads/')) {
       const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
       if (isImageFile) {
-        // Construct full URL for uploaded images
-        const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${course.image_url}`;
-        console.log('✅ Using uploaded image, full URL:', fullUrl);
-        return fullUrl;
+        return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${course.image_url}`;
       } else {
-        console.log('⚠️ File in image_url is not an image, using default');
         return defaultCourseImage;
       }
     }
     
     // If course has an external image URL, use it
-    if (course.image_url && course.image_url.startsWith('http')) {
-      console.log('🔍 External image detected:', course.image_url);
-      // Check if it's actually an image file - include .jpeg extension
+    if (course.image_url.startsWith('http')) {
+      // For Unsplash URLs and other known image services, trust them
+      if (course.image_url.includes('unsplash.com') || 
+          course.image_url.includes('images.unsplash.com') ||
+          course.image_url.includes('picsum.photos') ||
+          course.image_url.includes('via.placeholder.com')) {
+        return course.image_url;
+      }
+      
+      // For other external URLs, check if they have image extensions
       const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(course.image_url);
       if (isImageFile) {
-        console.log('✅ Using external image:', course.image_url);
         return course.image_url;
       } else {
-        console.log('⚠️ External URL is not an image, using default');
         return defaultCourseImage;
       }
     }
     
-    // If no image was uploaded (image_url is null, empty, or undefined), use default
-    console.log('⚠️ No image uploaded, using default image');
     return defaultCourseImage;
   };
 
@@ -190,19 +187,6 @@ const Admin = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('✅ Admin - Courses response received');
-      console.log('📊 Admin - Response status:', coursesResponse.status);
-      console.log('📊 Admin - Response data:', coursesResponse.data);
-      console.log('📊 Admin - Number of courses:', coursesResponse.data?.length || 0);
-      
-      // Debug: Log image URLs for each course
-      if (coursesResponse.data && coursesResponse.data.length > 0) {
-        console.log('🔍 Course image URLs:');
-        coursesResponse.data.forEach(course => {
-          console.log(`  Course ${course.id} (${course.title}): image_url = ${course.image_url}`);
-        });
-      }
-      
       setCourses(coursesResponse.data);
 
       // Fetch users
@@ -229,15 +213,7 @@ const Admin = () => {
 
       setLoading(false);
     } catch (error) {
-      console.error('❌ Admin - Error fetching data:', error);
-      console.error('❌ Admin - Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method
-      });
+      console.error('Error fetching admin data:', error);
       setLoading(false);
     }
   };
@@ -302,130 +278,133 @@ const Admin = () => {
     setTimeout(() => setAlert({ show: false, message: '', type: '' }), 5000);
   };
 
-  const handleFileSelect = (event) => {
-    setSelectedFile(event.target.files[0]);
+  // Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
 
-  const handleImageFileSelect = (event) => {
-    setSelectedImageFile(event.target.files[0]);
-  };
-
-  const uploadFile = async () => {
-    if (!selectedFile) return null;
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      const response = await axios.post(buildApiUrl(getEndpoint('UPLOAD')), formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      return response.data.url; // Return full URL instead of just filename
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      showAlert('Error uploading file', 'danger');
-      return null;
-    }
-  };
-
-  const uploadImageFile = async () => {
-    if (!selectedImageFile) {
-      console.log('❌ No image file selected');
-      return null;
-    }
-
-    console.log('🔍 Starting image upload for file:', selectedImageFile.name);
-    console.log('🔍 File type:', selectedImageFile.type);
-    console.log('🔍 File size:', selectedImageFile.size);
-
-    const formData = new FormData();
-    formData.append('file', selectedImageFile);
-
-    try {
-      const response = await axios.post(buildApiUrl(getEndpoint('UPLOAD')), formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type for documents
+      const allowedTypes = ['.pdf', '.doc', '.docx', '.txt'];
+      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
       
-      console.log('✅ Image upload successful:', response.data);
-      console.log('✅ Image URL returned:', response.data.url);
+      if (!allowedTypes.includes(fileExtension)) {
+        showAlert('Please select a valid document file (PDF, DOC, DOCX, TXT)', 'warning');
+        event.target.value = '';
+        return;
+      }
       
-      return response.data.url; // Return full URL from response
-    } catch (error) {
-      console.error('❌ Error uploading image:', error);
-      showAlert('Error uploading image', 'danger');
-      return null;
+      try {
+        const base64 = await fileToBase64(file);
+        setSelectedFile({ file, base64, name: file.name });
+      } catch (error) {
+        showAlert('Error reading file', 'danger');
+      }
     }
   };
+
+  const handleImageFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type for images
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/tiff'];
+      
+      if (!allowedTypes.includes(file.type)) {
+        showAlert('Please select a valid image file (JPG, PNG, GIF, WebP, BMP, TIFF)', 'warning');
+        event.target.value = '';
+        return;
+      }
+      
+      try {
+        const base64 = await fileToBase64(file);
+        setSelectedImageFile({ file, base64, name: file.name });
+      } catch (error) {
+        showAlert('Error reading image file', 'danger');
+      }
+    }
+  };
+
 
   const handleCourseSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate that at least one resource is provided
+    // Basic validation
     if (!selectedFile && !courseForm.document_url && !courseForm.external_link) {
       showAlert('Please provide either a document file or an external link', 'danger');
       return;
     }
     
-    // Validate quiz link is provided
-    if (!courseForm.quiz_link || courseForm.quiz_link.trim() === '') {
-      showAlert('Quiz link is required for all courses', 'danger');
+    if (!courseForm.quiz_link || courseForm.quiz_link.trim() === '' || courseForm.quiz_link.trim() === 'http') {
+      showAlert('Please provide a complete quiz link', 'danger');
+      return;
+    }
+    
+    if (!courseForm.quiz_link.startsWith('http://') && !courseForm.quiz_link.startsWith('https://')) {
+      showAlert('Quiz link must be a complete URL', 'danger');
       return;
     }
     
     try {
-      let documentUrl = courseForm.document_url;
-      let imageUrl = courseForm.image_url;
-      
+      // Prepare course data with base64 files
+      const courseData = {
+        ...courseForm,
+        price: 0,
+        document_url: courseForm.document_url,
+        image_url: courseForm.image_url,
+        quiz_link: courseForm.quiz_link.trim()
+      };
+
+      // Add base64 files if selected
       if (selectedFile) {
-        documentUrl = await uploadFile();
-        if (!documentUrl) return;
+        courseData.document_file = {
+          base64: selectedFile.base64,
+          fileName: selectedFile.name,
+          fileType: selectedFile.file.type
+        };
+        console.log('📄 Including document file:', selectedFile.name);
       }
 
       if (selectedImageFile) {
-        // Upload new image and use it
-        imageUrl = await uploadImageFile();
-        if (!imageUrl) return;
-        console.log('✅ New image uploaded successfully:', imageUrl);
-      } else {
-        // No new image selected, keep existing image only if it's actually an image file
-        if (imageUrl) {
-          const isImageFile = /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(imageUrl);
-          console.log('🔍 Existing imageUrl validation - isImageFile:', isImageFile, 'imageUrl:', imageUrl);
-          if (!isImageFile) {
-            console.log('⚠️ Existing image_url is not an image file, clearing it');
-            imageUrl = null; // Clear non-image files
-          }
-        }
+        courseData.image_file = {
+          base64: selectedImageFile.base64,
+          fileName: selectedImageFile.name,
+          fileType: selectedImageFile.file.type
+        };
+        console.log('🖼️ Including image file:', selectedImageFile.name);
       }
 
-      const courseData = {
-        ...courseForm,
-        price: 0, // Always free
-        document_url: documentUrl || courseForm.document_url,
-        image_url: imageUrl
-      };
-
-      console.log('🔍 Final course data to save:', courseData);
-      console.log('🔍 Final image_url value:', courseData.image_url);
+      console.log('📤 Sending course data with files to backend:', {
+        ...courseData,
+        document_file: courseData.document_file ? { ...courseData.document_file, base64: '[BASE64_DATA]' } : null,
+        image_file: courseData.image_file ? { ...courseData.image_file, base64: '[BASE64_DATA]' } : null
+      });
 
       if (selectedCourse) {
         await axios.put(buildApiUrl(`/api/courses/${selectedCourse.id}`), courseData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}` 
+          }
         });
         showAlert('Course updated successfully!', 'success');
       } else {
         await axios.post(buildApiUrl(getEndpoint('COURSES')), courseData, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          headers: { 
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}` 
+          }
         });
         showAlert('Course created successfully!', 'success');
       }
 
+      // Reset form
       setShowCourseModal(false);
       setSelectedCourse(null);
       setCourseForm({
@@ -446,7 +425,6 @@ const Admin = () => {
       await fetchData();
     } catch (error) {
       console.error('Error saving course:', error);
-      console.error('Error response:', error.response?.data);
       const errorMessage = error.response?.data?.message || 'Error saving course';
       showAlert(errorMessage, 'danger');
     }
@@ -795,6 +773,7 @@ const Admin = () => {
     setSelectedDepartmentForEdit(null);
     setDepartmentForm({ name: '', description: '', roles: [''] });
   };
+
 
 
   if (loading) {
@@ -1216,11 +1195,7 @@ const Admin = () => {
                           src={getCourseImageUrl(course)}
                           style={{ height: '150px', objectFit: 'cover', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
                           onError={(e) => {
-                            console.log('❌ Image failed to load for course:', course.id, 'URL:', e.target.src);
                             e.target.src = defaultCourseImage;
-                          }}
-                          onLoad={(e) => {
-                            console.log('✅ Image loaded successfully for course:', course.id, 'URL:', e.target.src);
                           }}
                         />
                         <Card.Body className="d-flex flex-column p-3">
@@ -1771,7 +1746,7 @@ const Admin = () => {
               {selectedImageFile && (
                 <div className="mt-2">
                   <img 
-                    src={URL.createObjectURL(selectedImageFile)} 
+                    src={selectedImageFile.base64} 
                     alt="Preview" 
                     style={{ maxWidth: '200px', maxHeight: '150px', objectFit: 'cover' }}
                     className="border rounded"
@@ -1836,7 +1811,7 @@ const Admin = () => {
               </Form.Text>
               {selectedFile && (
                 <div className="mt-2">
-                  <small className="text-muted">New file selected: {selectedFile.name}</small>
+                  <small className="text-success">✓ File ready: {selectedFile.name}</small>
                 </div>
               )}
               {courseForm.document_url && !selectedFile && (
@@ -1909,10 +1884,22 @@ const Admin = () => {
                 onChange={(e) => setCourseForm({...courseForm, quiz_link: e.target.value})}
                 placeholder="https://forms.google.com/quiz-link"
                 required
+                isInvalid={courseForm.quiz_link && courseForm.quiz_link.trim() !== '' && 
+                          courseForm.quiz_link.trim() !== 'http' && 
+                          !courseForm.quiz_link.startsWith('http://') && 
+                          !courseForm.quiz_link.startsWith('https://')}
               />
               <Form.Text className="text-muted">
                 Required: Students will be prompted to take this quiz before course completion
               </Form.Text>
+              {courseForm.quiz_link && courseForm.quiz_link.trim() !== '' && 
+               courseForm.quiz_link.trim() !== 'http' && 
+               !courseForm.quiz_link.startsWith('http://') && 
+               !courseForm.quiz_link.startsWith('https://') && (
+                <Form.Control.Feedback type="invalid">
+                  Please enter a complete URL starting with http:// or https://
+                </Form.Control.Feedback>
+              )}
             </Form.Group>
           </Form>
         </Modal.Body>
