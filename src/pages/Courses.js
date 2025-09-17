@@ -20,13 +20,11 @@ const Courses = () => {
 
   const categories = ['All', 'Project Management', 'Leadership', 'Technical', 'Soft Skills'];
 
-  // Redirect non-logged users to home
+  // Fetch courses when component mounts
   useEffect(() => {
-    if (!user) {
-      window.location.href = '/';
-      return;
+    if (user) {
+      fetchCourses();
     }
-    fetchCourses();
   }, [user]); // Add user as dependency to refresh when user changes
 
   const fetchCourses = async () => {

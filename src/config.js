@@ -1,9 +1,4 @@
 // API Configuration
-console.log('🔍 DEBUGGING ENVIRONMENT VARIABLES:');
-console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('All REACT_APP_ variables:', Object.keys(process.env).filter(key => key.startsWith('REACT_APP_')));
-
 const config = {
   // API Base URL - with proper fallback for local development
   API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
@@ -38,8 +33,6 @@ const config = {
   }
 };
 
-console.log('🎯 FINAL API_BASE_URL BEING USED:', config.API_BASE_URL);
-
 // Helper function to build full API URLs
 export const buildApiUrl = (endpoint) => {
   // Handle nested endpoints like 'AUTH.REGISTER'
@@ -73,8 +66,6 @@ export const buildApiUrl = (endpoint) => {
 
 // Helper function to get endpoint
 export const getEndpoint = (path) => {
-  console.log('🔍 getEndpoint called with:', path);
-  
   // Split nested paths (like 'ENROLLMENTS_MY_ENROLLMENTS')
   const pathParts = path.split('_');
   let current = config.ENDPOINTS;
@@ -83,12 +74,10 @@ export const getEndpoint = (path) => {
     if (current && current[part]) {
       current = current[part];
     } else {
-      console.log('❌ getEndpoint - Path not found:', path);
       return path; // Return as-is if not found
     }
   }
   
-  console.log('✅ getEndpoint result:', current);
   return current;
 };
 
